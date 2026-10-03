@@ -1,0 +1,41 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:v="clr-namespace:System;assembly=mscorlib">
+    <!-- Main window -->
+    <v:String x:Key="m_Title">Загрузки</v:String>
+    <v:String x:Key="m_lblHelloWorld">Привет мир!</v:String>
+    <v:String x:Key="m_menu_Language">Язык</v:String>
+    <v:String x:Key="m_Number">10.5</v:String>
+    <!-- Menu -->
+    <v:String x:Key="openDownloadsBtn">Открыть Загрузки</v:String>
+    <v:String x:Key="aboutBtn">Сайт программы</v:String>
+    <v:String x:Key="settingsBtn">Инструкция</v:String>
+    <v:String x:Key="collapseBtn">Свернуть окно программы</v:String>
+    <v:String x:Key="helpBtn">Настройки</v:String>
+    <v:String x:Key="exitBtn">Выход</v:String>
+    <!-- Help window -->
+    <v:String x:Key="help_Title">Настройки</v:String>
+    <v:String x:Key="taskBarPin">Закрепить программу в панели задач</v:String>
+    <v:String x:Key="autoStartAdd">Добавить программу в автозагрузку</v:String>
+    <v:String x:Key="usingLabel">Как пользоваться программой</v:String>
+    <v:String x:Key="taskBarPinDesc">Чтобы закрепить приложение в панели задач: Нажмите на иконку открытого приложения в панели задач правой кнопкой мыши и выберите пункт "Закрепить"</v:String>
+    <v:String x:Key="autoStartBtn">Добавить приложение в автозагрузку</v:String>
+    <v:String x:Key="autoStartBtnOK">Убрать приложение из автозагрузки</v:String>
+    <v:String x:Key="autoStartDesc">Вы можете добавить приложение в автозагрузку Windows, нажав кнопку ниже. (Это может потребовать права администратора!) Приложение будет запускаться при старте системы Windows. Вы сможете убрать приложение из автозагрузки в любой момент снова нажав эту кнопку.</v:String>
+    <!-- About window -->
+    <v:String x:Key="a_Title">О программе</v:String>
+    <v:String x:Key="aW">Вебсайт автора</v:String>
+    <v:String x:Key="eleventh">11</v:String>
+    <v:String x:Key="thvelve">12</v:String>
+    <!-- Other -->
+    <v:String x:Key="closeBtn">Закрыть</v:String>
+    <v:String x:Key="okBtn">ОК</v:String>
+    <v:String x:Key="cancelBtn">Отменить</v:String>
+    <v:String x:Key="previewTitle">Предпросмотр</v:String>
+    <v:String x:Key="newUpdatesFounded">Доступно обновление программы, перейти на страницу загрузки?</v:String>
+    <v:String x:Key="oldVersion">Текущая версия</v:String>
+    <v:String x:Key="newVersion">Доступно обновление</v:String>
+    <v:String x:Key="upAv">Доступно обновление</v:String>
+    <v:String x:Key="upgradeTitle">Обновление</v:String>
+    <v:String x:Key="noupdates">Нет доступных обновлений</v:String>
+</ResourceDictionary>

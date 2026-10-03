@@ -1,0 +1,41 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:v="clr-namespace:System;assembly=mscorlib">
+    <!-- Main window -->
+    <v:String x:Key="m_Title">Завантаження</v:String>
+    <v:String x:Key="m_lblHelloWorld">Привіт світ!</v:String>
+    <v:String x:Key="m_menu_Language">Мова</v:String>
+    <v:String x:Key="m_Number">10.5</v:String>
+    <!-- Menu -->
+    <v:String x:Key="openDownloadsBtn">Відкрити Завантаження</v:String>
+    <v:String x:Key="aboutBtn">Сайт програми</v:String>
+    <v:String x:Key="settingsBtn">Інструкція</v:String>
+    <v:String x:Key="collapseBtn">Згорнути вікно програми</v:String>
+    <v:String x:Key="helpBtn">Налаштування</v:String>
+    <v:String x:Key="exitBtn">Вихід</v:String>
+    <!-- Help window -->
+    <v:String x:Key="help_Title">Налаштування</v:String>
+    <v:String x:Key="taskBarPin">Закріпити програму в панелі завдань</v:String>
+    <v:String x:Key="autoStartAdd">Додати програму в автозавантаження</v:String>
+    <v:String x:Key="usingLabel">Як користуватися програмою</v:String>
+    <v:String x:Key="taskBarPinDesc">Щоб закріпити додаток в панелі завдань Натисніть на іконку відкритого програми в панелі завдань правою кнопкою миші і виберіть пункт "Закріпити"</v:String>
+    <v:String x:Key="autoStartBtn">Додати додаток до автозавантаження</v:String>
+    <v:String x:Key= "autoStartBtnOK">Прибрати додаток з автозавантаження</v:String>
+    <v:String x:Key= "autoStartDesc">Ви можете додати додаток до автозавантаження Windows, натиснувши кнопку нижче. (Це може вимагати права адміністратора!) Додаток буде запускатися при старті системи Windows. Ви зможете прибрати додаток з автозавантаження в будь-який момент знову натиснувши цю кнопку.</v:String>
+    <!-- About window -->
+    <v:String x:Key="a_Title">Про програму</v:String>
+    <v:String x:Key="aW">Вебсайт автора</v:String>
+    <v:String x:Key= "eleventh" >11</v:String>
+    <v:String x:Key="thvelve">12</v:String>
+    <!-- Other -->
+    <v:String x:Key="closeBtn">Закрити</v:String>
+    <v:String x:Key= "okBtn" >ОК</v:String>
+    <v:String x:Key="cancelBtn">Скасувати</v:String>
+    <v:String x:Key="previewTitle">попередній Перегляд</v:String>
+    <v:String x:Key="newUpdatesFounded">Доступно оновлення програми, перейти на сторінку завантаження?</v:String>
+    <v:String x:Key="oldVersion">Поточна версія</v:String>
+    <v:String x:Key="newVersion">Доступно оновлення</v:String>
+    <v:String x:Key="upAv">Доступно оновлення</v:String>
+    <v:String x:Key="upgradeTitle">Оновлення</v:String>
+    <v:String x:Key="noupdates">Немає доступних оновлень</v:String>
+</ResourceDictionary>

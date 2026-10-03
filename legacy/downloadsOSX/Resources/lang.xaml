@@ -1,0 +1,41 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:v="clr-namespace:System;assembly=mscorlib">
+    <!-- Main window -->
+    <v:String x:Key="m_Title">Downloads</v:String>
+    <v:String x:Key="m_lblHelloWorld">Привет мир!</v:String>
+    <v:String x:Key="m_menu_Language">Язык</v:String>
+    <v:String x:Key="m_Number">10.5</v:String>
+    <!-- Menu -->
+    <v:String x:Key="openDownloadsBtn">Open Downloads</v:String>
+    <v:String x:Key="aboutBtn">App Website</v:String>
+    <v:String x:Key="settingsBtn">App Settings</v:String>
+    <v:String x:Key="collapseBtn">Minimize App window</v:String>
+    <v:String x:Key="helpBtn">Settings</v:String>
+    <v:String x:Key="exitBtn">Exit Application</v:String>
+    <!-- Help window -->
+    <v:String x:Key="help_Title">Settings</v:String>
+    <v:String x:Key="taskBarPin">Pin to TaskBar</v:String>
+    <v:String x:Key="autoStartAdd">Add App to Windows Autostart</v:String>
+    <v:String x:Key="usingLabel">How to use this App</v:String>
+    <v:String x:Key="taskBarPinDesc">To pin an application to the taskbar: Right-click on the icon of an open application in the taskbar and select "Pin"</v:String>
+    <v:String x:Key="autoStartBtn">Add app to Windows Autostart</v:String>
+    <v:String x:Key="autoStartBtnOK">Remove application from Windows AutoStart</v:String>
+    <v:String x:Key="autoStartDesc">You can add the application to Windows startup by clicking the button below. (This may require administrator rights!) The application will start when the Windows system starts. You can remove the application from startup at any time by clicking this button again.</v:String>
+    <!-- About window -->
+    <v:String x:Key="a_Title">About</v:String>
+    <v:String x:Key="aW">Author website</v:String>
+    <v:String x:Key="eleventh">11</v:String>
+    <v:String x:Key="thvelve">12</v:String>
+    <!-- Other -->
+    <v:String x:Key="closeBtn">Close</v:String>
+    <v:String x:Key="okBtn">OK</v:String>
+    <v:String x:Key="cancelBtn">Cancel</v:String>
+    <v:String x:Key="previewTitle">Preview</v:String>
+    <v:String x:Key="newUpdatesFounded">Program update available, go to the download page?</v:String>
+    <v:String x:Key="oldVersion">Current version</v:String>
+    <v:String x:Key="newVersion">Available upgrade</v:String>
+    <v:String x:Key="upAv">Update available</v:String>
+    <v:String x:Key="upgradeTitle">Update</v:String>
+    <v:String x:Key="noupdates">No updates available</v:String>
+</ResourceDictionary>
