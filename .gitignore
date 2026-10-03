@@ -1,0 +1,35 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+dist/
+publish/
+
+# Visual Studio / Rider / VS Code
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# NuGet
+packages/
+*.nupkg
+project.lock.json
+project.assets.json
+
+# Misc
+*.log
+Thumbs.db
+Desktop.ini
+
+# The legacy project is kept as committed reference; don't track new build output in it.
+legacy/**/bin/
+legacy/**/obj/
+legacy/.vs/

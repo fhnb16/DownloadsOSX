@@ -26,3 +26,25 @@ C:\Users\fhnb1\Documents\Visual Studio 2010\Projects\downloadsOSX\downloadsOSX\o
 C:\Users\fhnb1\Documents\Visual Studio 2010\Projects\downloadsOSX\downloadsOSX\obj\x86\Debug\update.baml
 C:\Users\fhnb1\Documents\Visual Studio 2010\Projects\downloadsOSX\downloadsOSX\obj\x86\Debug\downloadsOSX.csproj.Fody.CopyLocal.cache
 C:\Users\fhnb1\Documents\Visual Studio 2010\Projects\downloadsOSX\downloadsOSX\obj\x86\Debug\downloadsOSX.csproj.CopyComplete
+D:\Git\DownloadsOSX\legacy\downloadsOSX\obj\x86\Debug\downloadsOSX.csproj.AssemblyReference.cache
+D:\Git\DownloadsOSX\legacy\downloadsOSX\obj\x86\Debug\help.baml
+D:\Git\DownloadsOSX\legacy\downloadsOSX\obj\x86\Debug\MainWindow.baml
+D:\Git\DownloadsOSX\legacy\downloadsOSX\obj\x86\Debug\Preview.baml
+D:\Git\DownloadsOSX\legacy\downloadsOSX\obj\x86\Debug\Resources\lang.ru-RU.baml
+D:\Git\DownloadsOSX\legacy\downloadsOSX\obj\x86\Debug\Resources\lang.uk-UA.baml
+D:\Git\DownloadsOSX\legacy\downloadsOSX\obj\x86\Debug\Resources\lang.baml
+D:\Git\DownloadsOSX\legacy\downloadsOSX\obj\x86\Debug\App.baml
+D:\Git\DownloadsOSX\legacy\downloadsOSX\obj\x86\Debug\help.g.cs
+D:\Git\DownloadsOSX\legacy\downloadsOSX\obj\x86\Debug\MainWindow.g.cs
+D:\Git\DownloadsOSX\legacy\downloadsOSX\obj\x86\Debug\Preview.g.cs
+D:\Git\DownloadsOSX\legacy\downloadsOSX\obj\x86\Debug\update.g.cs
+D:\Git\DownloadsOSX\legacy\downloadsOSX\obj\x86\Debug\App.g.cs
+D:\Git\DownloadsOSX\legacy\downloadsOSX\obj\x86\Debug\Downloads_MarkupCompile.cache
+D:\Git\DownloadsOSX\legacy\downloadsOSX\obj\x86\Debug\Downloads_MarkupCompile.lref
+D:\Git\DownloadsOSX\legacy\downloadsOSX\obj\x86\Debug\update.baml
+D:\Git\DownloadsOSX\legacy\downloadsOSX\obj\x86\Debug\Downloads.g.resources
+D:\Git\DownloadsOSX\legacy\downloadsOSX\obj\x86\Debug\downloadsOSX.Properties.Resources.resources
+D:\Git\DownloadsOSX\legacy\downloadsOSX\obj\x86\Debug\downloadsOSX.csproj.GenerateResource.cache
+D:\Git\DownloadsOSX\legacy\downloadsOSX\obj\x86\Debug\downloadsOSX.csproj.CoreCompileInputs.cache
+D:\Git\DownloadsOSX\legacy\downloadsOSX\obj\x86\Debug\Downloads.exe
+D:\Git\DownloadsOSX\legacy\downloadsOSX\obj\x86\Debug\Downloads.pdb

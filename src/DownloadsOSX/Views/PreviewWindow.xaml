@@ -1,0 +1,70 @@
+<Window x:Class="DownloadsOSX.Views.PreviewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="{DynamicResource PreviewTitle}"
+        Width="720" Height="520" MinWidth="360" MinHeight="240"
+        WindowStyle="SingleBorderWindow" ResizeMode="CanResize" ShowInTaskbar="False"
+        WindowStartupLocation="Manual"
+        FontFamily="{DynamicResource App.FontFamily}" FontSize="{DynamicResource App.FontSize}"
+        Foreground="{DynamicResource Brush.Text}" UseLayoutRounding="True">
+    <Grid x:Name="Root" RenderTransformOrigin="0.5,0.5" Focusable="True" FocusVisualStyle="{x:Null}" Background="Transparent">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="48" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid.RenderTransform>
+            <ScaleTransform x:Name="OpenScale" ScaleX="1" ScaleY="1" />
+        </Grid.RenderTransform>
+
+        <!-- Header (caption) -->
+        <DockPanel Margin="12,0,6,0" LastChildFill="True">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button x:Name="PrevButton" Style="{StaticResource Button.Icon}" Click="Prev_Click" ToolTip="{DynamicResource PreviousItem}" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Path Data="{StaticResource Icon.ChevronLeft}" Style="{StaticResource IconPath}" />
+                </Button>
+                <TextBlock x:Name="PositionText" Style="{StaticResource Text.Secondary}" VerticalAlignment="Center" Margin="2,0" MinWidth="34" TextAlignment="Center" />
+                <Button x:Name="NextButton" Style="{StaticResource Button.Icon}" Click="Next_Click" ToolTip="{DynamicResource NextItem}" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Path Data="{StaticResource Icon.ChevronRight}" Style="{StaticResource IconPath}" />
+                </Button>
+                <Border Width="1" Height="18" Margin="6,0" Background="{DynamicResource Brush.Separator}" />
+                <StackPanel x:Name="ZoomButtons" Orientation="Horizontal" Visibility="Collapsed">
+                    <Button Style="{StaticResource Button.Icon}" Click="ZoomOut_Click" ToolTip="{DynamicResource ZoomOut}" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                        <Path Data="{StaticResource Icon.ZoomOut}" Style="{StaticResource IconPath}" />
+                    </Button>
+                    <Button Style="{StaticResource Button.Icon}" Click="ZoomFit_Click" ToolTip="{DynamicResource ZoomFit}" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                        <Path Data="{StaticResource Icon.Fit}" Style="{StaticResource IconPath}" />
+                    </Button>
+                    <Button Style="{StaticResource Button.Icon}" Click="ZoomIn_Click" ToolTip="{DynamicResource ZoomIn}" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                        <Path Data="{StaticResource Icon.ZoomIn}" Style="{StaticResource IconPath}" />
+                    </Button>
+                    <Border Width="1" Height="18" Margin="6,0" Background="{DynamicResource Brush.Separator}" />
+                </StackPanel>
+                <Button Style="{StaticResource Button.Icon}" Click="Open_Click" ToolTip="{DynamicResource OpenDefault}" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Path Data="{StaticResource Icon.Open}" Style="{StaticResource IconPath}" />
+                </Button>
+                <Button Style="{StaticResource Button.Icon}" Click="OpenWith_Click" ToolTip="{DynamicResource OpenWith}" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Path Data="{StaticResource Icon.OpenWith}" Style="{StaticResource IconPath}" />
+                </Button>
+                <Button Style="{StaticResource Button.Icon}" Click="ShowInFolder_Click" ToolTip="{DynamicResource ShowInFolder}" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Path Data="{StaticResource Icon.Folder}" Style="{StaticResource IconPath}" />
+                </Button>
+                <Button Style="{StaticResource Button.Caption}" Click="Close_Click" ToolTip="{DynamicResource Close}" Margin="4,0,0,0" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Path Data="{StaticResource Icon.Close}" Style="{StaticResource IconPath}" />
+                </Button>
+            </StackPanel>
+            <Image x:Name="HeaderIcon" Width="20" Height="20" Margin="0,0,10,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality" />
+            <StackPanel VerticalAlignment="Center" Margin="0,0,8,0">
+                <TextBlock x:Name="NameText" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                <TextBlock x:Name="InfoText" Style="{StaticResource Text.Secondary}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+        </DockPanel>
+
+        <!-- Content -->
+        <Grid Grid.Row="1" Margin="8,0,8,8">
+            <ContentControl x:Name="Presenter" Focusable="False" />
+            <TextBlock x:Name="LoadingText" Text="{DynamicResource Loading}" Style="{StaticResource Text.Secondary}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed" />
+        </Grid>
+    </Grid>
+</Window>

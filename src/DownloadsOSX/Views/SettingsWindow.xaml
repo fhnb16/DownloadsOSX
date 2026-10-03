@@ -1,0 +1,564 @@
+<Window x:Class="DownloadsOSX.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        xmlns:m="clr-namespace:DownloadsOSX.Models"
+        Title="{DynamicResource SettingsTitle}"
+        Width="900" Height="660" MinWidth="680" MinHeight="420"
+        WindowStyle="SingleBorderWindow" ResizeMode="CanResize" ShowInTaskbar="True"
+        WindowStartupLocation="CenterScreen"
+        Icon="/Downloads;component/Assets/Downloads.ico"
+        FontFamily="{DynamicResource App.FontFamily}" FontSize="{DynamicResource App.FontSize}"
+        Foreground="{DynamicResource Brush.Text}" UseLayoutRounding="True">
+
+    <Window.Resources>
+        <Style x:Key="RowLabel" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style x:Key="Swatch" TargetType="Button">
+            <Setter Property="Width" Value="22" />
+            <Setter Property="Height" Value="22" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" CornerRadius="11" Background="{TemplateBinding Background}" BorderThickness="1" BorderBrush="{DynamicResource Brush.StrokeStrong}" />
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderThickness" Value="2" />
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="230" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Navigation -->
+        <DockPanel Margin="12,0,8,12">
+            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Height="56" Margin="6,0,0,4">
+                <Image Source="/Downloads;component/Assets/Images/Downloads.png" Width="22" Height="22" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality" />
+                <TextBlock Text="{DynamicResource SettingsTitleShort}" Style="{StaticResource Text.Title}" VerticalAlignment="Center" Margin="10,0,0,0" />
+            </StackPanel>
+            <TextBlock DockPanel.Dock="Bottom" x:Name="VersionFooter" Style="{StaticResource Text.Secondary}" Foreground="{DynamicResource Brush.TextTertiary}" Margin="12,0,0,0" />
+            <ListBox x:Name="Nav" Background="Transparent" BorderThickness="0" ItemContainerStyle="{StaticResource NavItem}"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectionChanged="Nav_SelectionChanged">
+                <ListBoxItem Tag="Appearance">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource Icon.Palette}" Style="{StaticResource IconPath}" Margin="0,0,12,0" />
+                        <TextBlock Text="{DynamicResource PageAppearance}" />
+                    </StackPanel>
+                </ListBoxItem>
+                <ListBoxItem Tag="Behavior">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource Icon.Settings}" Style="{StaticResource IconPath}" Margin="0,0,12,0" />
+                        <TextBlock Text="{DynamicResource PageBehavior}" />
+                    </StackPanel>
+                </ListBoxItem>
+                <ListBoxItem Tag="Notifications">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource Icon.Bell}" Style="{StaticResource IconPath}" Margin="0,0,12,0" />
+                        <TextBlock Text="{DynamicResource PageNotifications}" />
+                    </StackPanel>
+                </ListBoxItem>
+                <ListBoxItem Tag="Preview">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource Icon.Eye}" Style="{StaticResource IconPath}" Margin="0,0,12,0" />
+                        <TextBlock Text="{DynamicResource PagePreview}" />
+                    </StackPanel>
+                </ListBoxItem>
+                <ListBoxItem Tag="Updates">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource Icon.Update}" Style="{StaticResource IconPath}" Margin="0,0,12,0" />
+                        <TextBlock Text="{DynamicResource PageUpdates}" />
+                    </StackPanel>
+                </ListBoxItem>
+                <ListBoxItem Tag="About">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource Icon.Info}" Style="{StaticResource IconPath}" Margin="0,0,12,0" />
+                        <TextBlock Text="{DynamicResource PageAbout}" />
+                    </StackPanel>
+                </ListBoxItem>
+            </ListBox>
+        </DockPanel>
+
+        <!-- Caption buttons -->
+        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Panel.ZIndex="10">
+            <Button Style="{StaticResource Button.Caption}" Click="Minimize_Click" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                <Path Data="{StaticResource Icon.Minimize}" Style="{StaticResource IconPath}" />
+            </Button>
+            <Button Style="{StaticResource Button.Caption}" Click="Close_Click" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                <Path Data="{StaticResource Icon.Close}" Style="{StaticResource IconPath}" />
+            </Button>
+        </StackPanel>
+
+        <!-- Pages -->
+        <ScrollViewer x:Name="PageScroller" Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,40,0,0">
+            <Grid Margin="16,4,24,24" MaxWidth="820" HorizontalAlignment="Left">
+
+                <!-- ============ Appearance ============ -->
+                <StackPanel x:Name="PageAppearance">
+                    <TextBlock Text="{DynamicResource PageAppearance}" FontSize="24" FontWeight="SemiBold" Margin="2,0,0,10" />
+
+                    <TextBlock Text="{DynamicResource SectionMaterial}" Style="{StaticResource Text.Section}" />
+                    <Border Style="{StaticResource Card}">
+                        <DockPanel>
+                            <ComboBox DockPanel.Dock="Right" SelectedValuePath="Tag" SelectedValue="{Binding Backdrop}" VerticalAlignment="Center">
+                                <ComboBoxItem Tag="{x:Static m:BackdropKind.Auto}" Content="{DynamicResource BackdropAuto}" />
+                                <ComboBoxItem Tag="{x:Static m:BackdropKind.Mica}" Content="{DynamicResource BackdropMica}" />
+                                <ComboBoxItem Tag="{x:Static m:BackdropKind.MicaAlt}" Content="{DynamicResource BackdropMicaAlt}" />
+                                <ComboBoxItem Tag="{x:Static m:BackdropKind.Acrylic}" Content="{DynamicResource BackdropAcrylic}" />
+                                <ComboBoxItem Tag="{x:Static m:BackdropKind.Blur}" Content="{DynamicResource BackdropBlur}" />
+                                <ComboBoxItem Tag="{x:Static m:BackdropKind.Solid}" Content="{DynamicResource BackdropSolid}" />
+                            </ComboBox>
+                            <StackPanel Margin="0,0,16,0">
+                                <TextBlock Text="{DynamicResource Backdrop}" />
+                                <TextBlock x:Name="BackdropStatus" Style="{StaticResource Text.Secondary}" />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <DockPanel>
+                            <ComboBox DockPanel.Dock="Right" SelectedValuePath="Tag" SelectedValue="{Binding Theme}" VerticalAlignment="Center">
+                                <ComboBoxItem Tag="{x:Static m:ThemeMode.System}" Content="{DynamicResource ThemeSystem}" />
+                                <ComboBoxItem Tag="{x:Static m:ThemeMode.Light}" Content="{DynamicResource ThemeLight}" />
+                                <ComboBoxItem Tag="{x:Static m:ThemeMode.Dark}" Content="{DynamicResource ThemeDark}" />
+                            </ComboBox>
+                            <StackPanel Margin="0,0,16,0">
+                                <TextBlock Text="{DynamicResource Theme}" />
+                                <TextBlock Text="{DynamicResource ThemeHint}" Style="{StaticResource Text.Secondary}" />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <DockPanel>
+                                <ComboBox x:Name="TintModeBox" DockPanel.Dock="Right" SelectedValuePath="Tag" SelectedValue="{Binding TintMode}" VerticalAlignment="Center">
+                                    <ComboBoxItem Tag="{x:Static m:TintMode.Auto}" Content="{DynamicResource TintAuto}" />
+                                    <ComboBoxItem Tag="{x:Static m:TintMode.Custom}" Content="{DynamicResource TintCustom}" />
+                                </ComboBox>
+                                <StackPanel Margin="0,0,16,0">
+                                    <TextBlock Text="{DynamicResource Tint}" />
+                                    <TextBlock Text="{DynamicResource TintHint}" Style="{StaticResource Text.Secondary}" />
+                                </StackPanel>
+                            </DockPanel>
+                            <StackPanel x:Name="TintCustomPanel" Margin="0,12,0,2">
+                                <StackPanel Orientation="Horizontal">
+                                    <Border x:Name="TintPreview" Width="30" Height="30" CornerRadius="5" BorderThickness="1" BorderBrush="{DynamicResource Brush.StrokeStrong}" Margin="0,0,10,0" />
+                                    <TextBox x:Name="TintColorBox" Width="110" Text="{Binding TintColor, UpdateSourceTrigger=LostFocus}" VerticalContentAlignment="Center" KeyDown="TintColorBox_KeyDown" />
+                                    <WrapPanel x:Name="Swatches" Margin="16,0,0,0" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <DockPanel Margin="0,10,0,0">
+                                    <TextBlock DockPanel.Dock="Left" Text="{DynamicResource TintOpacity}" Style="{StaticResource RowLabel}" Width="150" />
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding TintOpacity, StringFormat={}{0} %}" Width="44" TextAlignment="Right" VerticalAlignment="Center" />
+                                    <Slider Minimum="0" Maximum="100" Value="{Binding TintOpacity}" SmallChange="1" LargeChange="10" IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center" />
+                                </DockPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource Card}" x:Name="CornersCard">
+                        <DockPanel>
+                            <ComboBox DockPanel.Dock="Right" SelectedValuePath="Tag" SelectedValue="{Binding Corners}" VerticalAlignment="Center">
+                                <ComboBoxItem Tag="{x:Static m:CornerStyle.Default}" Content="{DynamicResource CornersDefault}" />
+                                <ComboBoxItem Tag="{x:Static m:CornerStyle.Round}" Content="{DynamicResource CornersRound}" />
+                                <ComboBoxItem Tag="{x:Static m:CornerStyle.Small}" Content="{DynamicResource CornersSmall}" />
+                                <ComboBoxItem Tag="{x:Static m:CornerStyle.Square}" Content="{DynamicResource CornersSquare}" />
+                            </ComboBox>
+                            <StackPanel Margin="0,0,16,0">
+                                <TextBlock Text="{DynamicResource Corners}" />
+                                <TextBlock Text="{DynamicResource CornersHint}" Style="{StaticResource Text.Secondary}" />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+                    <Border Style="{StaticResource Card}" x:Name="RoundOldCard">
+                        <CheckBox IsChecked="{Binding RoundOldWindows}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource RoundOld}" />
+                                <TextBlock Text="{DynamicResource RoundOldHint}" Style="{StaticResource Text.Secondary}" />
+                            </StackPanel>
+                        </CheckBox>
+                    </Border>
+
+                    <TextBlock Text="{DynamicResource SectionLayout}" Style="{StaticResource Text.Section}" />
+                    <Border Style="{StaticResource Card}">
+                        <DockPanel>
+                            <ComboBox DockPanel.Dock="Right" SelectedValuePath="Tag" SelectedValue="{Binding ViewMode}" VerticalAlignment="Center">
+                                <ComboBoxItem Tag="{x:Static m:ViewMode.List}" Content="{DynamicResource ViewList}" />
+                                <ComboBoxItem Tag="{x:Static m:ViewMode.Grid}" Content="{DynamicResource ViewGrid}" />
+                            </ComboBox>
+                            <TextBlock Text="{DynamicResource ViewModeLabel}" Style="{StaticResource RowLabel}" />
+                        </DockPanel>
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <DockPanel>
+                            <ComboBox DockPanel.Dock="Right" SelectedValuePath="Tag" SelectedValue="{Binding ItemSize}" VerticalAlignment="Center">
+                                <ComboBoxItem Tag="{x:Static m:ItemSize.Compact}" Content="{DynamicResource SizeCompact}" />
+                                <ComboBoxItem Tag="{x:Static m:ItemSize.Normal}" Content="{DynamicResource SizeNormal}" />
+                                <ComboBoxItem Tag="{x:Static m:ItemSize.Large}" Content="{DynamicResource SizeLarge}" />
+                            </ComboBox>
+                            <TextBlock Text="{DynamicResource ItemSizeLabel}" Style="{StaticResource RowLabel}" />
+                        </DockPanel>
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <CheckBox IsChecked="{Binding ShowDetails}" Content="{DynamicResource ShowDetails}" />
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <CheckBox IsChecked="{Binding GroupByDate}" Content="{DynamicResource GroupByDate}" />
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <CheckBox IsChecked="{Binding NewestNearTaskbar}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource NewestNearTaskbar}" />
+                                <TextBlock Text="{DynamicResource NewestNearTaskbarHint}" Style="{StaticResource Text.Secondary}" />
+                            </StackPanel>
+                        </CheckBox>
+                    </Border>
+
+                    <TextBlock Text="{DynamicResource SectionText}" Style="{StaticResource Text.Section}" />
+                    <Border Style="{StaticResource Card}">
+                        <DockPanel>
+                            <ComboBox DockPanel.Dock="Right" SelectedValuePath="Tag" SelectedValue="{Binding Font}" VerticalAlignment="Center">
+                                <ComboBoxItem Tag="{x:Static m:FontChoice.System}" Content="{DynamicResource FontSystem}" />
+                                <ComboBoxItem Tag="{x:Static m:FontChoice.Ubuntu}" Content="{DynamicResource FontUbuntu}" />
+                            </ComboBox>
+                            <TextBlock Text="{DynamicResource FontLabel}" Style="{StaticResource RowLabel}" />
+                        </DockPanel>
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Left" Text="{DynamicResource FontSizeLabel}" Style="{StaticResource RowLabel}" Width="150" />
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding FontSize, StringFormat={}{0} pt}" Width="44" TextAlignment="Right" VerticalAlignment="Center" />
+                            <Slider Minimum="11" Maximum="18" Value="{Binding FontSize}" IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center" />
+                        </DockPanel>
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <CheckBox IsChecked="{Binding Animations}" Content="{DynamicResource Animations}" />
+                    </Border>
+                </StackPanel>
+
+                <!-- ============ Behavior ============ -->
+                <StackPanel x:Name="PageBehavior" Visibility="Collapsed">
+                    <TextBlock Text="{DynamicResource PageBehavior}" FontSize="24" FontWeight="SemiBold" Margin="2,0,0,10" />
+
+                    <TextBlock Text="{DynamicResource SectionFolders}" Style="{StaticResource Text.Section}" />
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="{DynamicResource DownloadsFolder}" />
+                            <DockPanel Margin="0,8,0,0">
+                                <Button DockPanel.Dock="Right" Content="{DynamicResource Reset}" Margin="6,0,0,0" Click="ResetFolder_Click" />
+                                <Button DockPanel.Dock="Right" Content="{DynamicResource Browse}" Margin="6,0,0,0" Click="BrowseFolder_Click" />
+                                <TextBox x:Name="FolderBox" IsReadOnly="True" VerticalContentAlignment="Center" />
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="{DynamicResource AddFolder}" Click="AddExtraFolder_Click" VerticalAlignment="Center" />
+                                <StackPanel Margin="0,0,16,0">
+                                    <TextBlock Text="{DynamicResource ExtraFolders}" />
+                                    <TextBlock Text="{DynamicResource ExtraFoldersHint}" Style="{StaticResource Text.Secondary}" />
+                                </StackPanel>
+                            </DockPanel>
+                            <ItemsControl x:Name="ExtraFoldersList" Margin="0,6,0,0">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <DockPanel Margin="0,4,0,0">
+                                            <Button DockPanel.Dock="Right" Style="{StaticResource Button.Icon}" Width="28" Height="28" Click="RemoveExtraFolder_Click" Tag="{Binding}">
+                                                <Path Data="{StaticResource Icon.Close}" Style="{StaticResource IconPath}" />
+                                            </Button>
+                                            <Path Data="{StaticResource Icon.Folder}" Style="{StaticResource IconPath}" Stroke="{DynamicResource Brush.TextSecondary}" Margin="0,0,8,0" />
+                                            <TextBlock Text="{Binding}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock Text="{DynamicResource SectionContent}" Style="{StaticResource Text.Section}" />
+                    <Border Style="{StaticResource Card}">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Left" Text="{DynamicResource ItemCount}" Style="{StaticResource RowLabel}" Width="150" />
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding ItemCount}" Width="44" TextAlignment="Right" VerticalAlignment="Center" />
+                            <Slider Minimum="3" Maximum="60" Value="{Binding ItemCount}" IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center" />
+                        </DockPanel>
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <DockPanel>
+                            <ComboBox DockPanel.Dock="Right" SelectedValuePath="Tag" SelectedValue="{Binding SortBy}" VerticalAlignment="Center">
+                                <ComboBoxItem Tag="{x:Static m:SortBy.Modified}" Content="{DynamicResource SortModified}" />
+                                <ComboBoxItem Tag="{x:Static m:SortBy.Created}" Content="{DynamicResource SortCreated}" />
+                                <ComboBoxItem Tag="{x:Static m:SortBy.Name}" Content="{DynamicResource SortName}" />
+                            </ComboBox>
+                            <TextBlock Text="{DynamicResource SortLabel}" Style="{StaticResource RowLabel}" />
+                        </DockPanel>
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <CheckBox IsChecked="{Binding ShowFolders}" Content="{DynamicResource ShowFolders}" />
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <CheckBox IsChecked="{Binding ShowHidden}" Content="{DynamicResource ShowHidden}" />
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <CheckBox IsChecked="{Binding ShowPartial}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource ShowPartial}" />
+                                <TextBlock Text="{DynamicResource ShowPartialHint}" Style="{StaticResource Text.Secondary}" />
+                            </StackPanel>
+                        </CheckBox>
+                    </Border>
+
+                    <TextBlock Text="{DynamicResource SectionWindow}" Style="{StaticResource Text.Section}" />
+                    <Border Style="{StaticResource Card}">
+                        <DockPanel>
+                            <ComboBox DockPanel.Dock="Right" SelectedValuePath="Tag" SelectedValue="{Binding Presence}" VerticalAlignment="Center">
+                                <ComboBoxItem Tag="{x:Static m:PresenceMode.Taskbar}" Content="{DynamicResource PresenceTaskbar}" />
+                                <ComboBoxItem Tag="{x:Static m:PresenceMode.Tray}" Content="{DynamicResource PresenceTray}" />
+                                <ComboBoxItem Tag="{x:Static m:PresenceMode.Both}" Content="{DynamicResource PresenceBoth}" />
+                            </ComboBox>
+                            <StackPanel Margin="0,0,16,0">
+                                <TextBlock Text="{DynamicResource Presence}" />
+                                <TextBlock Text="{DynamicResource PresenceHint}" Style="{StaticResource Text.Secondary}" />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <DockPanel>
+                            <ComboBox DockPanel.Dock="Right" SelectedValuePath="Tag" SelectedValue="{Binding Position}" VerticalAlignment="Center">
+                                <ComboBoxItem Tag="{x:Static m:PositionMode.NearCursor}" Content="{DynamicResource PositionCursor}" />
+                                <ComboBoxItem Tag="{x:Static m:PositionMode.Center}" Content="{DynamicResource PositionCenter}" />
+                                <ComboBoxItem Tag="{x:Static m:PositionMode.Remember}" Content="{DynamicResource PositionRemember}" />
+                            </ComboBox>
+                            <StackPanel Margin="0,0,16,0">
+                                <TextBlock Text="{DynamicResource Position}" />
+                                <TextBlock Text="{DynamicResource PositionHint}" Style="{StaticResource Text.Secondary}" />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <CheckBox IsChecked="{Binding HideOnDeactivate}" Content="{DynamicResource HideOnDeactivate}" />
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <CheckBox IsChecked="{Binding SingleClickOpen}" Content="{DynamicResource SingleClickOpen}" />
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <CheckBox IsChecked="{Binding ConfirmDelete}" Content="{DynamicResource ConfirmDeleteSetting}" />
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <CheckBox IsChecked="{Binding HotkeyEnabled}">
+                                <StackPanel>
+                                    <TextBlock Text="{DynamicResource Hotkey}" />
+                                    <TextBlock Text="{DynamicResource HotkeyHint}" Style="{StaticResource Text.Secondary}" />
+                                </StackPanel>
+                            </CheckBox>
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0" IsEnabled="{Binding HotkeyEnabled}">
+                                <TextBox x:Name="HotkeyBox" Width="200" IsReadOnly="True" IsReadOnlyCaretVisible="False" Text="{Binding Hotkey, Mode=OneWay}"
+                                         PreviewKeyDown="HotkeyBox_PreviewKeyDown" GotKeyboardFocus="HotkeyBox_GotFocus" LostKeyboardFocus="HotkeyBox_LostFocus" VerticalContentAlignment="Center" />
+                                <TextBlock x:Name="HotkeyStatus" Style="{StaticResource Text.Secondary}" VerticalAlignment="Center" Margin="12,0,0,0" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock Text="{DynamicResource SectionStartup}" Style="{StaticResource Text.Section}" />
+                    <Border Style="{StaticResource Card}">
+                        <CheckBox x:Name="AutostartBox" Click="AutostartBox_Click">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource Autostart}" />
+                                <TextBlock Text="{DynamicResource AutostartHint}" Style="{StaticResource Text.Secondary}" />
+                            </StackPanel>
+                        </CheckBox>
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <CheckBox IsChecked="{Binding StartMinimized}" Content="{DynamicResource StartMinimized}" />
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <DockPanel>
+                            <ComboBox DockPanel.Dock="Right" SelectedValuePath="Tag" SelectedValue="{Binding Language}" VerticalAlignment="Center">
+                                <ComboBoxItem Tag="{x:Static m:LanguageChoice.Auto}" Content="{DynamicResource LanguageAuto}" />
+                                <ComboBoxItem Tag="{x:Static m:LanguageChoice.English}" Content="English" />
+                                <ComboBoxItem Tag="{x:Static m:LanguageChoice.Russian}" Content="Русский" />
+                                <ComboBoxItem Tag="{x:Static m:LanguageChoice.Ukrainian}" Content="Українська" />
+                            </ComboBox>
+                            <TextBlock Text="{DynamicResource Language}" Style="{StaticResource RowLabel}" />
+                        </DockPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- ============ Notifications ============ -->
+                <StackPanel x:Name="PageNotifications" Visibility="Collapsed">
+                    <TextBlock Text="{DynamicResource PageNotifications}" FontSize="24" FontWeight="SemiBold" Margin="2,0,0,10" />
+                    <TextBlock Text="{DynamicResource SectionNewDownloads}" Style="{StaticResource Text.Section}" />
+                    <Border Style="{StaticResource Card}">
+                        <CheckBox IsChecked="{Binding BadgeOnNew}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource BadgeOnNew}" />
+                                <TextBlock Text="{DynamicResource BadgeOnNewHint}" Style="{StaticResource Text.Secondary}" />
+                            </StackPanel>
+                        </CheckBox>
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <CheckBox IsChecked="{Binding FlashOnNew}" Content="{DynamicResource FlashOnNew}" />
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <CheckBox IsChecked="{Binding SoundOnNew}" Content="{DynamicResource SoundOnNew}" />
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <CheckBox IsChecked="{Binding BalloonOnNew}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource BalloonOnNew}" />
+                                <TextBlock Text="{DynamicResource BalloonOnNewHint}" Style="{StaticResource Text.Secondary}" />
+                            </StackPanel>
+                        </CheckBox>
+                    </Border>
+                    <TextBlock Text="{DynamicResource SectionJumpList}" Style="{StaticResource Text.Section}" />
+                    <Border Style="{StaticResource Card}">
+                        <CheckBox IsChecked="{Binding JumpList}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource JumpListSetting}" />
+                                <TextBlock Text="{DynamicResource JumpListHint}" Style="{StaticResource Text.Secondary}" />
+                            </StackPanel>
+                        </CheckBox>
+                    </Border>
+                    <Border Style="{StaticResource Card}" IsEnabled="{Binding JumpList}">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Left" Text="{DynamicResource JumpListCount}" Style="{StaticResource RowLabel}" Width="150" />
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding JumpListCount}" Width="44" TextAlignment="Right" VerticalAlignment="Center" />
+                            <Slider Minimum="1" Maximum="20" Value="{Binding JumpListCount}" IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center" />
+                        </DockPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- ============ Preview ============ -->
+                <StackPanel x:Name="PagePreview" Visibility="Collapsed">
+                    <TextBlock Text="{DynamicResource PagePreview}" FontSize="24" FontWeight="SemiBold" Margin="2,0,0,4" />
+                    <TextBlock Text="{DynamicResource PreviewIntro}" Style="{StaticResource Text.Secondary}" Margin="2,0,0,6" />
+                    <TextBlock Text="{DynamicResource SectionPreviewTypes}" Style="{StaticResource Text.Section}" />
+                    <Border Style="{StaticResource Card}">
+                        <CheckBox IsChecked="{Binding PreviewMedia}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource PreviewMedia}" />
+                                <TextBlock Text="{DynamicResource PreviewMediaHint}" Style="{StaticResource Text.Secondary}" />
+                            </StackPanel>
+                        </CheckBox>
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <CheckBox IsChecked="{Binding PreviewText}" Content="{DynamicResource PreviewText}" />
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <CheckBox IsChecked="{Binding PreviewHandlers}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource PreviewHandlers}" />
+                                <TextBlock Text="{DynamicResource PreviewHandlersHint}" Style="{StaticResource Text.Secondary}" />
+                            </StackPanel>
+                        </CheckBox>
+                    </Border>
+                    <TextBlock Text="{DynamicResource SectionPlayback}" Style="{StaticResource Text.Section}" />
+                    <Border Style="{StaticResource Card}">
+                        <CheckBox IsChecked="{Binding AutoplayMedia}" Content="{DynamicResource AutoplayMedia}" />
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <CheckBox IsChecked="{Binding LoopMedia}" Content="{DynamicResource LoopMedia}" />
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <CheckBox IsChecked="{Binding KeepZoom}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource KeepZoom}" />
+                                <TextBlock Text="{DynamicResource KeepZoomHint}" Style="{StaticResource Text.Secondary}" />
+                            </StackPanel>
+                        </CheckBox>
+                    </Border>
+                </StackPanel>
+
+                <!-- ============ Updates ============ -->
+                <StackPanel x:Name="PageUpdates" Visibility="Collapsed">
+                    <TextBlock Text="{DynamicResource PageUpdates}" FontSize="24" FontWeight="SemiBold" Margin="2,0,0,10" />
+                    <Border Style="{StaticResource Card}" Padding="16,14">
+                        <DockPanel>
+                            <Button x:Name="CheckNowButton" DockPanel.Dock="Right" Style="{StaticResource Button.Accent}" Content="{DynamicResource CheckNow}" Click="CheckNow_Click" VerticalAlignment="Center" />
+                            <Path Data="{StaticResource Icon.Update}" Style="{StaticResource IconPath}" Width="32" Height="32" Stretch="Uniform" StrokeThickness="1.2" Margin="0,0,14,0" />
+                            <StackPanel Margin="0,0,16,0" VerticalAlignment="Center">
+                                <TextBlock x:Name="UpdateHeadline" FontWeight="SemiBold" />
+                                <TextBlock x:Name="UpdateStatusText" Style="{StaticResource Text.Secondary}" />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <DockPanel>
+                            <ComboBox DockPanel.Dock="Right" SelectedValuePath="Tag" SelectedValue="{Binding UpdateMode}" VerticalAlignment="Center">
+                                <ComboBoxItem Tag="{x:Static m:UpdateMode.Notify}" Content="{DynamicResource UpdateNotify}" />
+                                <ComboBoxItem Tag="{x:Static m:UpdateMode.Auto}" Content="{DynamicResource UpdateAuto}" />
+                                <ComboBoxItem Tag="{x:Static m:UpdateMode.Off}" Content="{DynamicResource UpdateOff}" />
+                            </ComboBox>
+                            <StackPanel Margin="0,0,16,0">
+                                <TextBlock Text="{DynamicResource UpdateModeLabel}" />
+                                <TextBlock Text="{DynamicResource UpdateModeHint}" Style="{StaticResource Text.Secondary}" />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="{DynamicResource UpdateSources}" />
+                            <TextBlock x:Name="SourcesText" Style="{StaticResource Text.Secondary}" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource Card}" x:Name="SkippedCard">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="{DynamicResource Reset}" Click="ResetSkipped_Click" VerticalAlignment="Center" />
+                            <TextBlock x:Name="SkippedText" Style="{StaticResource RowLabel}" />
+                        </DockPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- ============ About ============ -->
+                <StackPanel x:Name="PageAbout" Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal" Margin="2,0,0,16">
+                        <Image Source="/Downloads;component/Assets/Images/Downloads.png" Width="64" Height="64" RenderOptions.BitmapScalingMode="HighQuality" />
+                        <StackPanel Margin="16,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="DownloadsOSX" FontSize="24" FontWeight="SemiBold" />
+                            <TextBlock x:Name="AboutVersion" Style="{StaticResource Text.Secondary}" />
+                        </StackPanel>
+                    </StackPanel>
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock x:Name="AboutSystem" Style="{StaticResource Text.Secondary}" LineHeight="20" />
+                            <WrapPanel Margin="0,10,0,0">
+                                <Button Content="{DynamicResource ProjectPage}" Click="ProjectPage_Click" Margin="0,0,8,6" />
+                                <Button Content="{DynamicResource OpenSettingsFolder}" Click="OpenSettingsFolder_Click" Margin="0,0,8,6" />
+                                <Button Content="{DynamicResource OpenLog}" Click="OpenLog_Click" Margin="0,0,8,6" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock Text="{DynamicResource TaskBarPin}" Style="{StaticResource Text.Section}" />
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="{DynamicResource TaskBarPinDesc}" TextWrapping="Wrap" />
+                            <Image x:Name="PinImage" Stretch="Uniform" MaxHeight="110" HorizontalAlignment="Left" Margin="0,10,0,0" RenderOptions.BitmapScalingMode="HighQuality" />
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock Text="{DynamicResource Shortcuts}" Style="{StaticResource Text.Section}" />
+                    <Border Style="{StaticResource Card}">
+                        <Grid x:Name="ShortcutsGrid">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="170" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</Window>

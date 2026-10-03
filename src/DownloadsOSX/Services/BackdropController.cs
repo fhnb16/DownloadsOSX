@@ -1,0 +1,375 @@
+using System;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
+using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Shell;
+using DownloadsOSX.Interop;
+using DownloadsOSX.Models;
+
+namespace DownloadsOSX.Services
+{
+    /// <summary>
+    /// Gives a WPF window a system backdrop (Mica / Mica Alt / Acrylic / Blur / Solid) with automatic fallback
+    /// for the running OS, plus Win11 rounded corners, dark-mode frame and optional region rounding on older Windows.
+    ///
+    /// Every window uses WindowChrome with the glass frame extended over the whole client area and a transparent
+    /// composition background, and is NOT a layered window (AllowsTransparency=false). Layered windows are why the
+    /// legacy app had square corners on Win11: DWM never rounds them.
+    /// </summary>
+    internal sealed class BackdropController
+    {
+        private static readonly DependencyProperty ControllerProperty =
+            DependencyProperty.RegisterAttached("BackdropController", typeof(BackdropController), typeof(BackdropController));
+
+        public static BackdropController Get(Window w) => w?.GetValue(ControllerProperty) as BackdropController;
+
+        private readonly Window _window;
+        private readonly BackdropKind _autoKind;
+        private readonly double _resizeBorder;
+        private IntPtr _hwnd;
+        private bool _inSizeMove;
+        private bool _accentActive;
+        private bool _systemBackdropActive;
+
+        /// <summary>The backdrop actually in use after fallback.</summary>
+        public BackdropKind Effective { get; private set; } = BackdropKind.Solid;
+
+        public static event Action<BackdropController> EffectiveChanged;
+
+        /// <param name="autoKind">What "Auto" means for this window (Acrylic for transient surfaces, Mica for long-lived ones).</param>
+        /// <param name="resizeBorder">Resize border thickness in DIPs (0 = not resizable by dragging edges).</param>
+        public BackdropController(Window window, BackdropKind autoKind, double resizeBorder = 0)
+        {
+            _window = window;
+            _autoKind = autoKind;
+            _resizeBorder = resizeBorder;
+            window.SetValue(ControllerProperty, this);
+
+            window.AllowsTransparency = false;
+            window.Background = Brushes.Transparent;
+            ApplyChrome(true);
+
+            window.SourceInitialized += OnSourceInitialized;
+            ThemeService.Changed += OnThemeChanged;
+            App.Settings.PropertyChanged += OnSettingChanged;
+            window.Closed += (s, e) =>
+            {
+                ThemeService.Changed -= OnThemeChanged;
+                App.Settings.PropertyChanged -= OnSettingChanged;
+            };
+        }
+
+        private void OnThemeChanged() => Apply();
+
+        private void OnSettingChanged(object sender, PropertyChangedEventArgs e)
+        {
+            switch (e.PropertyName)
+            {
+                case nameof(AppSettings.Backdrop):
+                case nameof(AppSettings.TintMode):
+                case nameof(AppSettings.TintColor):
+                case nameof(AppSettings.TintOpacity):
+                case nameof(AppSettings.Corners):
+                case nameof(AppSettings.RoundOldWindows):
+                case nameof(AppSettings.Animations):
+                    Apply();
+                    break;
+            }
+        }
+
+        private void OnSourceInitialized(object sender, EventArgs e)
+        {
+            _hwnd = new WindowInteropHelper(_window).Handle;
+            var source = HwndSource.FromHwnd(_hwnd);
+            if (source?.CompositionTarget != null) source.CompositionTarget.BackgroundColor = Colors.Transparent;
+            source?.AddHook(WndProc);
+
+            // Hide the system caption/icon/sysmenu drawing DWM would otherwise paint into the extended frame.
+            try
+            {
+                var opts = new NativeMethods.WTA_OPTIONS
+                {
+                    dwFlags = NativeMethods.WTNCA_NODRAWCAPTION | NativeMethods.WTNCA_NODRAWICON | NativeMethods.WTNCA_NOSYSMENU,
+                    dwMask = NativeMethods.WTNCA_NODRAWCAPTION | NativeMethods.WTNCA_NODRAWICON | NativeMethods.WTNCA_NOSYSMENU,
+                };
+                NativeMethods.SetWindowThemeAttribute(_hwnd, NativeMethods.WTA_NONCLIENT, ref opts, (uint)Marshal.SizeOf(opts));
+            }
+            catch { }
+
+            // DWM still paints min/max/close into the glass frame while WS_SYSMENU is set; our windows draw their own.
+            // WS_CAPTION/WS_MINIMIZEBOX stay, so taskbar minimize/restore and its animations keep working.
+            long style = NativeMethods.GetWindowLong(_hwnd, NativeMethods.GWL_STYLE);
+            NativeMethods.SetWindowLong(_hwnd, NativeMethods.GWL_STYLE, style & ~(long)NativeMethods.WS_SYSMENU);
+
+            Apply();
+        }
+
+        private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            switch (msg)
+            {
+                case NativeMethods.WM_ENTERSIZEMOVE:
+                    // Win10 SWCA acrylic lags badly while dragging; switch to plain blur until the move ends.
+                    _inSizeMove = true;
+                    if (_accentActive && Effective == BackdropKind.Acrylic) SetAccent(NativeMethods.AccentState.EnableBlurBehind, TintColor(), TintAlpha(true));
+                    break;
+                case NativeMethods.WM_EXITSIZEMOVE:
+                    _inSizeMove = false;
+                    if (_accentActive && Effective == BackdropKind.Acrylic) Apply();
+                    break;
+                case NativeMethods.WM_DWMCOMPOSITIONCHANGED:
+                case NativeMethods.WM_DPICHANGED:
+                    _window.Dispatcher.BeginInvoke(new Action(Apply));
+                    break;
+                case NativeMethods.WM_SIZE:
+                    if (App.Settings.RoundOldWindows && !OsInfo.IsWin11) ApplyRegion();
+                    break;
+            }
+            return IntPtr.Zero;
+        }
+
+        public void Apply()
+        {
+            var s = App.Settings;
+            var requested = s.Backdrop == BackdropKind.Auto ? _autoKind : s.Backdrop;
+            var effective = Resolve(requested);
+            bool dark = ThemeService.IsDark;
+
+            if (_hwnd == IntPtr.Zero)
+            {
+                Effective = effective;
+                return;
+            }
+
+            // Frame first: re-applying WindowChrome re-extends the DWM frame and must not happen after the backdrop is set.
+            ApplyChrome(effective != BackdropKind.Solid);
+            ExtendFrame(effective != BackdropKind.Solid);
+
+            ResetNative();
+            SetDwm(OsInfo.SupportsDarkTitle ? (OsInfo.Build >= 18985 ? NativeMethods.DWMWA_USE_IMMERSIVE_DARK_MODE : NativeMethods.DWMWA_USE_IMMERSIVE_DARK_MODE_OLD) : 0, dark ? 1 : 0);
+            SetDwm(NativeMethods.DWMWA_TRANSITIONS_FORCEDISABLED, s.Animations ? 0 : 1);
+            if (OsInfo.SupportsCornerPreference)
+                SetDwm(NativeMethods.DWMWA_WINDOW_CORNER_PREFERENCE, CornerValue(s.Corners));
+            ApplyRegion();
+
+            bool ok = true;
+            switch (effective)
+            {
+                case BackdropKind.Mica:
+                    ok = OsInfo.SupportsSystemBackdrop ? SetSystemBackdrop(2) : SetDwm(NativeMethods.DWMWA_MICA_EFFECT, 1);
+                    break;
+                case BackdropKind.MicaAlt:
+                    ok = SetSystemBackdrop(4);
+                    break;
+                case BackdropKind.Acrylic:
+                    ok = OsInfo.SupportsSystemBackdrop
+                        ? SetSystemBackdrop(3)
+                        : SetAccent(_inSizeMove ? NativeMethods.AccentState.EnableBlurBehind : NativeMethods.AccentState.EnableAcrylicBlurBehind, TintColor(), TintAlpha(true));
+                    break;
+                case BackdropKind.Blur:
+                    ok = OsInfo.SupportsAccentBlur ? SetAccent(NativeMethods.AccentState.EnableBlurBehind, TintColor(), 0) : true; // Win7: Aero glass from the extended frame
+                    break;
+            }
+
+            if (!ok && effective != BackdropKind.Solid)
+            {
+                Log.Warn($"Backdrop {effective} failed on {OsInfo.Describe()}, falling back to Solid");
+                effective = BackdropKind.Solid;
+                ResetNative();
+                ApplyChrome(false);
+                ExtendFrame(false);
+            }
+
+            _window.Background = BackgroundFor(effective, dark);
+
+            if (Effective != effective)
+            {
+                Effective = effective;
+                EffectiveChanged?.Invoke(this);
+            }
+        }
+
+        /// <summary>Maps a requested backdrop to what the OS can actually do.</summary>
+        public static BackdropKind Resolve(BackdropKind requested)
+        {
+            if (requested == BackdropKind.Auto) requested = BackdropKind.Acrylic;
+            if (requested == BackdropKind.Solid || !OsInfo.IsCompositionEnabled) return BackdropKind.Solid;
+
+            if (OsInfo.SupportsSystemBackdrop) return requested;
+            if (OsInfo.SupportsLegacyMica)
+                return requested == BackdropKind.MicaAlt ? BackdropKind.Mica : requested;
+            if (OsInfo.SupportsAcrylic)
+                return requested == BackdropKind.Blur ? BackdropKind.Blur : BackdropKind.Acrylic;
+            if (OsInfo.SupportsAccentBlur) return BackdropKind.Blur;
+            if (OsInfo.IsWin8x) return BackdropKind.Solid; // DWM on Windows 8 has no blur
+            if (OsInfo.IsVistaOr7) return BackdropKind.Blur; // Aero glass
+            return BackdropKind.Solid;
+        }
+
+        private Brush BackgroundFor(BackdropKind kind, bool dark)
+        {
+            var s = App.Settings;
+            Color solid = dark ? Color.FromRgb(0x20, 0x20, 0x20) : Color.FromRgb(0xF3, 0xF3, 0xF3);
+            Color custom = ThemeService.ParseColor(s.TintColor, solid);
+            bool isCustom = s.TintMode == TintMode.Custom;
+
+            Color c;
+            switch (kind)
+            {
+                case BackdropKind.Solid:
+                    c = isCustom ? Color.FromRgb(custom.R, custom.G, custom.B) : solid;
+                    break;
+                case BackdropKind.Acrylic when _accentActive:
+                    c = Colors.Transparent; // tint is part of the accent policy
+                    break;
+                case BackdropKind.Blur when !OsInfo.SupportsAccentBlur:
+                    // Windows 7 glass: a light/dark wash keeps text readable on any colorization.
+                    c = isCustom ? WithAlpha(custom, s.TintOpacity) : (dark ? Color.FromArgb(0x80, 0, 0, 0) : Color.FromArgb(0x60, 0xFF, 0xFF, 0xFF));
+                    break;
+                case BackdropKind.Blur:
+                    c = isCustom ? WithAlpha(custom, s.TintOpacity) : (dark ? Color.FromArgb(0x99, 0x1C, 0x1C, 0x1C) : Color.FromArgb(0x99, 0xF3, 0xF3, 0xF3));
+                    break;
+                default:
+                    // Mica / Mica Alt / system Acrylic already tint by theme; only overlay a custom tint.
+                    c = isCustom ? WithAlpha(custom, s.TintOpacity) : Colors.Transparent;
+                    break;
+            }
+            var b = new SolidColorBrush(c);
+            b.Freeze();
+            return b;
+        }
+
+        // DWM_WINDOW_CORNER_PREFERENCE: 0 default, 1 do not round, 2 round, 3 round small.
+        private static int CornerValue(CornerStyle c) =>
+            c == CornerStyle.Round ? 2 : c == CornerStyle.Small ? 3 : c == CornerStyle.Square ? 1 : 0;
+
+        private static Color WithAlpha(Color c, int percent) => Color.FromArgb((byte)(255 * percent / 100), c.R, c.G, c.B);
+
+        private Color TintColor()
+        {
+            var s = App.Settings;
+            Color auto = ThemeService.IsDark ? Color.FromRgb(0x1C, 0x1C, 0x1C) : Color.FromRgb(0xF0, 0xF0, 0xF0);
+            return s.TintMode == TintMode.Custom ? ThemeService.ParseColor(s.TintColor, auto) : auto;
+        }
+
+        private byte TintAlpha(bool acrylic)
+        {
+            var s = App.Settings;
+            int percent = s.TintMode == TintMode.Custom ? s.TintOpacity : (ThemeService.IsDark ? 60 : 55);
+            int a = 255 * percent / 100;
+            return (byte)Math.Max(acrylic ? 1 : 0, a); // alpha 0 breaks SWCA acrylic on some builds
+        }
+
+        private void ExtendFrame(bool glass)
+        {
+            if (_hwnd == IntPtr.Zero) return;
+            var m = glass ? new NativeMethods.MARGINS { Left = -1, Right = -1, Top = -1, Bottom = -1 } : new NativeMethods.MARGINS();
+            try { NativeMethods.DwmExtendFrameIntoClientArea(_hwnd, ref m); } catch { }
+        }
+
+        private bool? _chromeGlass;
+
+        private void ApplyChrome(bool glass)
+        {
+            if (_chromeGlass == glass) return; // re-setting WindowChrome is not free: it re-extends the frame
+            _chromeGlass = glass;
+            var chrome = new WindowChrome
+            {
+                CaptionHeight = 0,
+                ResizeBorderThickness = new Thickness(_resizeBorder),
+                CornerRadius = new CornerRadius(0),
+                GlassFrameThickness = glass ? new Thickness(-1) : new Thickness(0),
+                UseAeroCaptionButtons = false,
+            };
+            var existing = WindowChrome.GetWindowChrome(_window);
+            if (existing != null) chrome.CaptionHeight = existing.CaptionHeight;
+            WindowChrome.SetWindowChrome(_window, chrome);
+        }
+
+        /// <summary>Sets the draggable caption height (DIPs) of the window.</summary>
+        public void SetCaptionHeight(double height)
+        {
+            var chrome = WindowChrome.GetWindowChrome(_window);
+            if (chrome == null) return;
+            var copy = (WindowChrome)chrome.Clone();
+            copy.CaptionHeight = height;
+            WindowChrome.SetWindowChrome(_window, copy);
+        }
+
+        private void ApplyRegion()
+        {
+            if (_hwnd == IntPtr.Zero) return;
+            if (App.Settings.RoundOldWindows && !OsInfo.IsWin11 && _window.WindowState != WindowState.Maximized)
+            {
+                NativeMethods.GetWindowRect(_hwnd, out var r);
+                double scale = VisualTreeHelper.GetDpi(_window).DpiScaleX;
+                int d = (int)Math.Round(16 * scale);
+                IntPtr rgn = NativeMethods.CreateRoundRectRgn(0, 0, r.Width + 1, r.Height + 1, d, d);
+                if (NativeMethods.SetWindowRgn(_hwnd, rgn, true) == 0) NativeMethods.DeleteObject(rgn); // system owns it on success
+            }
+            else
+            {
+                NativeMethods.SetWindowRgn(_hwnd, IntPtr.Zero, true);
+            }
+        }
+
+        private void ResetNative()
+        {
+            if (_systemBackdropActive)
+            {
+                SetDwm(NativeMethods.DWMWA_SYSTEMBACKDROP_TYPE, 1); // DWMSBT_NONE
+                _systemBackdropActive = false;
+            }
+            if (OsInfo.SupportsLegacyMica && !OsInfo.SupportsSystemBackdrop) SetDwm(NativeMethods.DWMWA_MICA_EFFECT, 0);
+            if (_accentActive)
+            {
+                SetAccent(NativeMethods.AccentState.Disabled, Colors.Transparent, 0);
+                _accentActive = false;
+            }
+        }
+
+        private bool SetSystemBackdrop(int type)
+        {
+            bool ok = SetDwm(NativeMethods.DWMWA_SYSTEMBACKDROP_TYPE, type);
+            _systemBackdropActive = ok;
+            return ok;
+        }
+
+        private bool SetDwm(int attr, int value)
+        {
+            if (attr == 0 || _hwnd == IntPtr.Zero) return false;
+            try
+            {
+                int hr = NativeMethods.DwmSetWindowAttribute(_hwnd, attr, ref value, sizeof(int));
+                return hr == 0;
+            }
+            catch { return false; }
+        }
+
+        private bool SetAccent(NativeMethods.AccentState state, Color tint, byte alpha)
+        {
+            if (_hwnd == IntPtr.Zero) return false;
+            var accent = new NativeMethods.AccentPolicy
+            {
+                AccentState = state,
+                AccentFlags = state == NativeMethods.AccentState.Disabled ? 0u : 2u,
+                // ABGR
+                GradientColor = ((uint)alpha << 24) | ((uint)tint.B << 16) | ((uint)tint.G << 8) | tint.R,
+            };
+            int size = Marshal.SizeOf(accent);
+            IntPtr ptr = Marshal.AllocHGlobal(size);
+            try
+            {
+                Marshal.StructureToPtr(accent, ptr, false);
+                var data = new NativeMethods.WindowCompositionAttributeData { Attribute = NativeMethods.WCA_ACCENT_POLICY, Data = ptr, SizeOfData = size };
+                bool ok = NativeMethods.SetWindowCompositionAttribute(_hwnd, ref data) != 0;
+                if (state != NativeMethods.AccentState.Disabled) _accentActive = ok;
+                return ok;
+            }
+            catch { return false; }
+            finally { Marshal.FreeHGlobal(ptr); }
+        }
+    }
+}

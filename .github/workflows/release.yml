@@ -1,0 +1,68 @@
+name: Release
+
+# Push a tag like v1.2.0 to build Downloads.exe, generate update.json and publish a GitHub release.
+# Installed apps pick it up through https://github.com/<owner>/<repo>/releases/latest/download/update.json.
+# Tags with a suffix (v1.2.0-rc1) become pre-releases, which "latest" ignores — handy for testing.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to build (manual runs only upload an artifact)
+        default: 0.0.0-dev
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version
+        id: v
+        shell: pwsh
+        run: |
+          $v = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.TrimStart('v') } else { '${{ inputs.version }}' }
+          "version=$v" >> $env:GITHUB_OUTPUT
+          "prerelease=$($v.Contains('-').ToString().ToLower())" >> $env:GITHUB_OUTPUT
+
+      - uses: microsoft/setup-msbuild@v2
+
+      - name: Build
+        run: msbuild src/DownloadsOSX/DownloadsOSX.csproj -restore -p:Configuration=Release -p:Version=${{ steps.v.outputs.version }} -p:ContinuousIntegrationBuild=true -v:m
+
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Copy-Item src/DownloadsOSX/bin/Release/net48/Downloads.exe dist/
+
+          # Release notes: the annotated tag message, else the last commit message.
+          git fetch --tags --force | Out-Null
+          $notes = if ($env:GITHUB_REF_TYPE -eq 'tag') { git tag -l --format='%(contents:body)' $env:GITHUB_REF_NAME } else { $null }
+          if (-not "$notes".Trim()) { $notes = git log -1 --format=%B }
+          Set-Content dist/notes.md $notes
+
+          $url = "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/Downloads.exe"
+          ./tools/make-manifest.ps1 -Exe dist/Downloads.exe -Version '${{ steps.v.outputs.version }}' -Url $url -NotesFile dist/notes.md -Out dist/update.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Downloads-${{ steps.v.outputs.version }}
+          path: dist/
+
+      - name: Publish release
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ghArgs = @($env:GITHUB_REF_NAME, 'dist/Downloads.exe', 'dist/update.json', '--title', "Downloads $env:GITHUB_REF_NAME", '--notes-file', 'dist/notes.md')
+          if ('${{ steps.v.outputs.prerelease }}' -eq 'true') { $ghArgs += '--prerelease' }
+          gh release create @ghArgs

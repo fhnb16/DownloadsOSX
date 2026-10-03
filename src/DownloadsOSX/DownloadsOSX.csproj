@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>Downloads</AssemblyName>
+    <RootNamespace>DownloadsOSX</RootNamespace>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+
+    <!-- AnyCPU without Prefer32Bit: 64-bit on x64 Windows so 64-bit shell extensions
+         (context menu, thumbnails, preview handlers) load; 32-bit on x86 Windows 7. -->
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+
+    <ApplicationIcon>Assets\Downloads.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+
+    <!-- CI passes -p:Version=x.y.z from the git tag. -->
+    <Version>1.0.0</Version>
+    <Product>DownloadsOSX</Product>
+    <Company>fhnb</Company>
+    <Copyright>© fhnb</Copyright>
+    <Description>Downloads stack for the Windows taskbar</Description>
+
+    <!-- Keep the output a single self-contained exe. -->
+    <DebugType>embedded</DebugType>
+    <!-- The app checks for .NET 4.8 itself; no Downloads.exe.config needed next to the exe. -->
+    <GenerateSupportedRuntime>false</GenerateSupportedRuntime>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <GenerateResourceUsePreserializedResources>false</GenerateResourceUsePreserializedResources>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Build-time only: lets the project build without the .NET 4.8 targeting pack installed. -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.VisualBasic" />
+    <Reference Include="System.Runtime.Serialization" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\Downloads.ico" />
+    <Resource Include="Assets\Images\*.png" />
+    <Resource Include="Assets\Fonts\*.ttf" />
+  </ItemGroup>
+
+</Project>

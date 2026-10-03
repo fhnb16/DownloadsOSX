@@ -1,0 +1,28 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <SolidColorBrush x:Key="Brush.Text" Color="#E4000000" />
+    <SolidColorBrush x:Key="Brush.TextSecondary" Color="#9E000000" />
+    <SolidColorBrush x:Key="Brush.TextTertiary" Color="#72000000" />
+    <SolidColorBrush x:Key="Brush.Hover" Color="#0D000000" />
+    <SolidColorBrush x:Key="Brush.Pressed" Color="#08000000" />
+    <SolidColorBrush x:Key="Brush.ItemSelected" Color="#12000000" />
+    <SolidColorBrush x:Key="Brush.ItemSelectedHover" Color="#1A000000" />
+    <SolidColorBrush x:Key="Brush.Stroke" Color="#14000000" />
+    <SolidColorBrush x:Key="Brush.StrokeStrong" Color="#29000000" />
+    <SolidColorBrush x:Key="Brush.Card" Color="#B3FFFFFF" />
+    <SolidColorBrush x:Key="Brush.CardHover" Color="#E0FFFFFF" />
+    <SolidColorBrush x:Key="Brush.Input" Color="#C8FFFFFF" />
+    <SolidColorBrush x:Key="Brush.InputHover" Color="#F0FFFFFF" />
+    <SolidColorBrush x:Key="Brush.Popup" Color="#FAF9F9F9" />
+    <SolidColorBrush x:Key="Brush.PopupStroke" Color="#22000000" />
+    <SolidColorBrush x:Key="Brush.ScrollThumb" Color="#72000000" />
+    <SolidColorBrush x:Key="Brush.ScrollThumbHover" Color="#9E000000" />
+    <SolidColorBrush x:Key="Brush.ToggleOff" Color="#9E000000" />
+    <SolidColorBrush x:Key="Brush.Separator" Color="#14000000" />
+    <SolidColorBrush x:Key="Brush.Danger" Color="#C42B1C" />
+    <SolidColorBrush x:Key="Brush.Solid" Color="#F3F3F3" />
+    <SolidColorBrush x:Key="Brush.Toast" Color="#F5FFFFFF" />
+    <SolidColorBrush x:Key="Brush.Badge" Color="#C42B1C" />
+    <SolidColorBrush x:Key="Brush.Checker" Color="#0C000000" />
+    <SolidColorBrush x:Key="Brush.MediaBar" Color="#D9F3F3F3" />
+</ResourceDictionary>
