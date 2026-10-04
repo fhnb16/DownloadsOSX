@@ -8,8 +8,8 @@ using DownloadsOSX.Models;
 namespace DownloadsOSX.Services
 {
     /// <summary>
-    /// Loads/saves settings.json. Location: %AppData%\DownloadsOSX, or next to the exe when a
-    /// "portable.flag" file exists there.
+    /// Loads/saves settings.json (and log.txt lives beside it). Location: %AppData%\fhnb16\DownloadsOSX, or next to
+    /// the exe when a "portable.flag" file exists there.
     /// </summary>
     internal sealed class SettingsStore
     {
@@ -22,7 +22,23 @@ namespace DownloadsOSX.Services
         {
             string exeDir = AppContext.BaseDirectory;
             if (File.Exists(Path.Combine(exeDir, "portable.flag"))) return exeDir;
-            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DownloadsOSX");
+
+            string roaming = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string folder = Path.Combine(roaming, "fhnb16", "DownloadsOSX");
+
+            // Early builds stored settings in %AppData%\DownloadsOSX: carry them over once.
+            try
+            {
+                string oldFile = Path.Combine(roaming, "DownloadsOSX", "settings.json");
+                string newFile = Path.Combine(folder, "settings.json");
+                if (File.Exists(oldFile) && !File.Exists(newFile))
+                {
+                    Directory.CreateDirectory(folder);
+                    File.Copy(oldFile, newFile);
+                }
+            }
+            catch { /* start with defaults */ }
+            return folder;
         }
 
         public SettingsStore(string folder)

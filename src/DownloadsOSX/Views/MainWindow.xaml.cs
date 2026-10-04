@@ -54,7 +54,8 @@ namespace DownloadsOSX.Views
         private string _filter = "";
         private string _selectAfterRefresh;
         private int _unseen;
-        private string _titleFolder, _titleName;
+        private string _titleFolder, _titleLang;
+        private double _targetWidth = 345;
         private DispatcherTimer _toastTimer;
         private DispatcherTimer _autoUpdateTimer;
 
@@ -253,8 +254,16 @@ namespace DownloadsOSX.Views
             }
         }
 
+        /// <summary>Re-asserts the layout width and content-sized height (WPF can pick up the minimized stub size).</summary>
+        private void EnforceSize()
+        {
+            if (SizeToContent != SizeToContent.Height) SizeToContent = SizeToContent.Height;
+            if (double.IsNaN(Width) || Math.Abs(Width - _targetWidth) > 0.5) Width = _targetWidth;
+        }
+
         private void OnShown()
         {
+            EnforceSize();
             _positionedForShow = false;
             _unseen = 0;
             UpdateBadge();
@@ -289,10 +298,22 @@ namespace DownloadsOSX.Views
 
             double maxDip = Math.Max(240, ctx.Work.Height / ctx.Scale * 0.85);
             if (Math.Abs(MaxHeight - maxDip) > 1) MaxHeight = maxDip;
-            UpdateLayout();
 
-            double wDip = ActualWidth > 0 ? ActualWidth : Width;
-            double hDip = ActualHeight > 0 ? ActualHeight : 400;
+            // Never trust the window's current size here: while minimized it is the 160×28 iconic stub.
+            // Width comes from the layout settings, height from measuring the content at that width.
+            double wDip = _targetWidth;
+            double hDip;
+            if (WindowState == WindowState.Minimized || !IsVisible || ActualHeight < MinHeight)
+            {
+                Root.Measure(new Size(wDip, maxDip));
+                hDip = Math.Max(MinHeight, Math.Min(maxDip, Root.DesiredSize.Height));
+            }
+            else
+            {
+                EnforceSize();
+                UpdateLayout();
+                hDip = ActualHeight;
+            }
             int w = (int)Math.Round(wDip * ctx.Scale), h = (int)Math.Round(hDip * ctx.Scale);
 
             NativeMethods.RECT rect;
@@ -431,6 +452,7 @@ namespace DownloadsOSX.Views
                 case nameof(AppSettings.ItemSize):
                 case nameof(AppSettings.ShowDetails):
                 case nameof(AppSettings.GroupByDate):
+                case nameof(AppSettings.GridColumns):
                 case nameof(AppSettings.FontSize):
                     ApplyLayout();
                     break;
@@ -465,12 +487,13 @@ namespace DownloadsOSX.Views
 
             double thumb = s.ItemSize == ItemSize.Compact ? 28 : s.ItemSize == ItemSize.Large ? 60 : 44;
             double tileThumb = s.ItemSize == ItemSize.Compact ? 48 : s.ItemSize == ItemSize.Large ? 96 : 64;
-            double tile = tileThumb + 36;
-            int columns = s.ItemSize == ItemSize.Large ? 3 : 4;
+            // Minimum tile slot (container incl. its 6px padding + border); TilePanel stretches tiles to fill each row.
+            double tileMin = tileThumb + 24 + Math.Max(0, font - 13) * 4 + 14;
+            int columns = s.GridColumns;
 
             Resources["Stack.ThumbSize"] = thumb;
             Resources["Stack.TileThumbSize"] = tileThumb;
-            Resources["Stack.TileWidth"] = tile;
+            Resources["Stack.TileMinWidth"] = tileMin;
             Resources["Stack.NameMaxHeight"] = grid ? Math.Ceiling((font - 2) * 1.36) * 2 : (s.ItemSize == ItemSize.Compact ? line : line * 2);
             Resources["Stack.DetailsVisibility"] = s.ShowDetails && s.ItemSize != ItemSize.Compact ? Visibility.Visible : Visibility.Collapsed;
 
@@ -478,9 +501,11 @@ namespace DownloadsOSX.Views
             List.ItemsPanel = (ItemsPanelTemplate)FindResource(grid ? "GridPanel" : "ListPanel");
             List.ItemContainerStyle = (Style)FindResource("StackItem");
 
-            Width = grid
-                ? columns * (tile + 2 + 2 * 6) + 12 + 12 + 10 // items + container padding + list margin + scrollbar
+            _targetWidth = grid
+                ? columns * tileMin + 12 + 8 + 4 // tiles + list margin + scrollbar + slack
                 : (s.ItemSize == ItemSize.Compact ? 300 : s.ItemSize == ItemSize.Large ? 390 : 345) + (font - 13) * 10;
+            // A minimized window is 160×28; resizing it now would let WPF mix that into its size. Applied on restore.
+            if (WindowState != WindowState.Minimized) EnforceSize();
 
             List.GroupStyle.Clear();
             _view.GroupDescriptions.Clear();
@@ -511,6 +536,7 @@ namespace DownloadsOSX.Views
                         ToggleStack();
                     };
                     _tray.BalloonClicked += ShowStack;
+                    _tray.Text = Title;
                 }
                 _tray.Visible = true;
             }
@@ -568,12 +594,16 @@ namespace DownloadsOSX.Views
         private void UpdateHeader()
         {
             string folder = _feed.PrimaryFolder;
-            if (folder != _titleFolder)
+            string lang = App.Str("FolderDownloads"); // changes with the UI language
+            if (folder != _titleFolder || lang != _titleLang)
             {
                 _titleFolder = folder;
-                _titleName = Shell.GetDisplayName(folder);
+                _titleLang = lang;
+                string title = Shell.GetFolderTitle(folder);
+                TitleText.Text = title;
+                Title = title; // taskbar button / Alt+Tab text
+                if (_tray != null) _tray.Text = title;
             }
-            TitleText.Text = string.IsNullOrEmpty(_titleName) ? App.Str("AppTitle") : _titleName;
             int shown = _view.Count;
             CountText.Text = _feed.TotalCount > shown ? string.Format(App.Str("CountOfTotal"), shown, _feed.TotalCount) : "";
 
@@ -915,6 +945,9 @@ namespace DownloadsOSX.Views
                     break;
                 case Key.F when ctrl:
                     FilterBar.Visibility = Visibility.Visible;
+                    break;
+                case Key.G when ctrl:
+                    _settings.ViewMode = _settings.ViewMode == ViewMode.Grid ? ViewMode.List : ViewMode.Grid;
                     break;
                 case Key.Apps:
                 case Key.F10 when shift:

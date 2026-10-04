@@ -268,6 +268,7 @@ namespace DownloadsOSX.Services
             var desired = new List<FileEntry>(r.Top.Count);
             var arrived = new List<FileEntry>();
             bool multi = o.Folders.Length > 1;
+            var titles = multi ? o.Folders.ToDictionary(f => f, Shell.GetFolderTitle, StringComparer.OrdinalIgnoreCase) : null;
 
             foreach (var snap in r.Top)
             {
@@ -280,7 +281,7 @@ namespace DownloadsOSX.Services
                     entry = new FileEntry(snap);
                     LoadThumbnail(entry);
                 }
-                entry.SourceLabel = multi ? Path.GetFileName(snap.SourceFolder.TrimEnd('\\')) : null;
+                entry.SourceLabel = multi && titles.TryGetValue(snap.SourceFolder, out var t) ? t : null;
 
                 if (_known != null && !_known.Contains(snap.Path) && !snap.IsPartial && (DateTime.Now - snap.Modified).TotalMinutes < 10)
                     arrived.Add(entry);

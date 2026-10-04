@@ -141,11 +141,10 @@
     <s:String x:Key="ThemeSystem">Системная</s:String>
     <s:String x:Key="ThemeLight">Светлая</s:String>
     <s:String x:Key="ThemeDark">Тёмная</s:String>
-    <s:String x:Key="Tint">Оттенок</s:String>
-    <s:String x:Key="TintHint">Цвет поверх фона. Выше непрозрачность — лучше читаемость, ниже — больше прозрачности.</s:String>
+    <s:String x:Key="Tint">Цвет подложки</s:String>
+    <s:String x:Key="TintHint">Цвет слоя поверх фона. «Автоматически» — по светлой или тёмной теме.</s:String>
     <s:String x:Key="TintAuto">Автоматически</s:String>
     <s:String x:Key="TintCustom">Свой</s:String>
-    <s:String x:Key="TintOpacity">Непрозрачность</s:String>
     <s:String x:Key="AccentColor">Цвет акцента Windows</s:String>
     <s:String x:Key="Corners">Углы</s:String>
     <s:String x:Key="CornersHint">Форма углов окна в Windows 11.</s:String>
@@ -253,7 +252,7 @@
     <s:String x:Key="UpdateSources">Источники обновлений (по порядку)</s:String>
 
     <!-- Settings: about -->
-    <s:String x:Key="ProjectPage">Страница проекта</s:String>
+    <s:String x:Key="DeveloperSite">Сайт разработчика</s:String>
     <s:String x:Key="OpenSettingsFolder">Папка настроек</s:String>
     <s:String x:Key="OpenLog">Журнал</s:String>
     <s:String x:Key="SettingsFile">Настройки</s:String>
@@ -272,4 +271,21 @@
     <s:String x:Key="ShortcutPreviewNav">Предыдущий / следующий файл в просмотре</s:String>
     <s:String x:Key="ShortcutZoom">По размеру окна / 100% при просмотре изображений</s:String>
     <s:String x:Key="ShortcutMedia">Пауза / назад / вперёд при просмотре видео</s:String>
+    <s:String x:Key="GridColumns">Колонок в сетке</s:String>
+    <s:String x:Key="ShortcutToggleView">Переключить список / сетку</s:String>
+    <!-- Standard folder names (stack title) -->
+    <s:String x:Key="FolderDownloads">Загрузки</s:String>
+    <s:String x:Key="FolderDocuments">Документы</s:String>
+    <s:String x:Key="FolderDesktop">Рабочий стол</s:String>
+    <s:String x:Key="FolderPictures">Изображения</s:String>
+    <s:String x:Key="FolderMusic">Музыка</s:String>
+    <s:String x:Key="FolderVideos">Видео</s:String>
+    <s:String x:Key="FolderScreenshots">Снимки экрана</s:String>
+    <!-- Transparency -->
+    <s:String x:Key="TransparencyAuto">Автоматическая прозрачность</s:String>
+    <s:String x:Key="TransparencyHint">Подходящее значение для каждого материала. Выключите, чтобы задать вручную: 100 % — чистый материал Windows, 0 % — сплошной цвет.</s:String>
+    <s:String x:Key="Transparency">Прозрачность</s:String>
+    <s:String x:Key="TransparencyAutoValue">авто, {0} %</s:String>
+    <s:String x:Key="TransparencySolid">Не используется со сплошным фоном</s:String>
+    <s:String x:Key="BackdropOverridden">Запущен {0} — он подменяет фон всех окон, поэтому изменения здесь могут быть не видны. Добавьте Downloads.exe в его исключения.</s:String>
 </ResourceDictionary>

@@ -34,6 +34,13 @@ namespace DownloadsOSX.Services
             _icon.BalloonTipClicked += (s, e) => BalloonClicked?.Invoke();
         }
 
+        /// <summary>Tooltip (Windows limits it to 63 characters).</summary>
+        public string Text
+        {
+            get => _icon.Text;
+            set => _icon.Text = string.IsNullOrEmpty(value) ? "Downloads" : (value.Length > 63 ? value.Substring(0, 62) + "…" : value);
+        }
+
         public bool Visible
         {
             get => _icon.Visible;

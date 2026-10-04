@@ -123,6 +123,7 @@
                             <StackPanel Margin="0,0,16,0">
                                 <TextBlock Text="{DynamicResource Backdrop}" />
                                 <TextBlock x:Name="BackdropStatus" Style="{StaticResource Text.Secondary}" />
+                                <TextBlock x:Name="OverrideWarning" Style="{StaticResource Text.Secondary}" Foreground="{DynamicResource Brush.Danger}" Visibility="Collapsed" Margin="0,4,0,0" />
                             </StackPanel>
                         </DockPanel>
                     </Border>
@@ -151,18 +152,27 @@
                                     <TextBlock Text="{DynamicResource TintHint}" Style="{StaticResource Text.Secondary}" />
                                 </StackPanel>
                             </DockPanel>
-                            <StackPanel x:Name="TintCustomPanel" Margin="0,12,0,2">
-                                <StackPanel Orientation="Horizontal">
-                                    <Border x:Name="TintPreview" Width="30" Height="30" CornerRadius="5" BorderThickness="1" BorderBrush="{DynamicResource Brush.StrokeStrong}" Margin="0,0,10,0" />
-                                    <TextBox x:Name="TintColorBox" Width="110" Text="{Binding TintColor, UpdateSourceTrigger=LostFocus}" VerticalContentAlignment="Center" KeyDown="TintColorBox_KeyDown" />
-                                    <WrapPanel x:Name="Swatches" Margin="16,0,0,0" VerticalAlignment="Center" />
-                                </StackPanel>
-                                <DockPanel Margin="0,10,0,0">
-                                    <TextBlock DockPanel.Dock="Left" Text="{DynamicResource TintOpacity}" Style="{StaticResource RowLabel}" Width="150" />
-                                    <TextBlock DockPanel.Dock="Right" Text="{Binding TintOpacity, StringFormat={}{0} %}" Width="44" TextAlignment="Right" VerticalAlignment="Center" />
-                                    <Slider Minimum="0" Maximum="100" Value="{Binding TintOpacity}" SmallChange="1" LargeChange="10" IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center" />
-                                </DockPanel>
+                            <StackPanel x:Name="TintCustomPanel" Margin="0,12,0,2" Orientation="Horizontal">
+                                <Border x:Name="TintPreview" Width="30" Height="30" CornerRadius="5" BorderThickness="1" BorderBrush="{DynamicResource Brush.StrokeStrong}" Margin="0,0,10,0" />
+                                <TextBox x:Name="TintColorBox" Width="110" Text="{Binding TintColor, UpdateSourceTrigger=LostFocus}" VerticalContentAlignment="Center" KeyDown="TintColorBox_KeyDown" />
+                                <WrapPanel x:Name="Swatches" Margin="16,0,0,0" VerticalAlignment="Center" />
                             </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource Card}" x:Name="TransparencyCard">
+                        <StackPanel>
+                            <CheckBox IsChecked="{Binding AutoOpacity}">
+                                <StackPanel>
+                                    <TextBlock Text="{DynamicResource TransparencyAuto}" />
+                                    <TextBlock x:Name="TransparencyHint" Text="{DynamicResource TransparencyHint}" Style="{StaticResource Text.Secondary}" />
+                                </StackPanel>
+                            </CheckBox>
+                            <DockPanel Margin="0,12,0,0" x:Name="TransparencyRow">
+                                <TextBlock DockPanel.Dock="Left" Text="{DynamicResource Transparency}" Style="{StaticResource RowLabel}" Width="150" />
+                                <TextBlock DockPanel.Dock="Right" x:Name="TransparencyValue" Width="64" TextAlignment="Right" VerticalAlignment="Center" />
+                                <Slider x:Name="TransparencySlider" Minimum="0" Maximum="100" Value="{Binding Transparency}" SmallChange="1" LargeChange="10"
+                                        IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center" />
+                            </DockPanel>
                         </StackPanel>
                     </Border>
                     <Border Style="{StaticResource Card}" x:Name="CornersCard">
@@ -196,6 +206,13 @@
                                 <ComboBoxItem Tag="{x:Static m:ViewMode.Grid}" Content="{DynamicResource ViewGrid}" />
                             </ComboBox>
                             <TextBlock Text="{DynamicResource ViewModeLabel}" Style="{StaticResource RowLabel}" />
+                        </DockPanel>
+                    </Border>
+                    <Border Style="{StaticResource Card}" x:Name="GridColumnsCard">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Left" Text="{DynamicResource GridColumns}" Style="{StaticResource RowLabel}" Width="150" />
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding GridColumns}" Width="44" TextAlignment="Right" VerticalAlignment="Center" />
+                            <Slider Minimum="2" Maximum="8" Value="{Binding GridColumns}" IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center" />
                         </DockPanel>
                     </Border>
                     <Border Style="{StaticResource Card}">
@@ -533,7 +550,19 @@
                         <StackPanel>
                             <TextBlock x:Name="AboutSystem" Style="{StaticResource Text.Secondary}" LineHeight="20" />
                             <WrapPanel Margin="0,10,0,0">
-                                <Button Content="{DynamicResource ProjectPage}" Click="ProjectPage_Click" Margin="0,0,8,6" />
+                                <Button Click="GitHub_Click" Margin="0,0,8,6" ToolTip="{Binding Mode=OneWay, Source={x:Static m:Links.GitHub}}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Data="{StaticResource Icon.GitHub}" Width="16" Height="16" Stretch="Uniform" Margin="0,0,8,0" VerticalAlignment="Center"
+                                              Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                        <TextBlock Text="GitHub" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Click="DeveloperSite_Click" Margin="0,0,8,6" ToolTip="{Binding Mode=OneWay, Source={x:Static m:Links.Developer}}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Data="{StaticResource Icon.Globe}" Style="{StaticResource IconPath}" Margin="0,0,8,0" />
+                                        <TextBlock Text="{DynamicResource DeveloperSite}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
                                 <Button Content="{DynamicResource OpenSettingsFolder}" Click="OpenSettingsFolder_Click" Margin="0,0,8,6" />
                                 <Button Content="{DynamicResource OpenLog}" Click="OpenLog_Click" Margin="0,0,8,6" />
                             </WrapPanel>

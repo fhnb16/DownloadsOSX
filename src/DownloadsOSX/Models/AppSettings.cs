@@ -38,10 +38,12 @@ namespace DownloadsOSX.Models
             _tintMode = TintMode.Auto;
             _tintColor = "#202020";
             _tintOpacity = 40;
+            _autoOpacity = true;
             _corners = CornerStyle.Round;
             _roundOldWindows = false;
             _viewMode = ViewMode.List;
             _groupByDate = false;
+            _gridColumns = 4;
             _itemSize = ItemSize.Normal;
             _font = FontChoice.System;
             _fontSize = 13;
@@ -115,8 +117,23 @@ namespace DownloadsOSX.Models
         [DataMember] public string TintColor { get => _tintColor; set => Set(ref _tintColor, value); }
 
         private int _tintOpacity;
-        /// <summary>0..100, used when TintMode is Custom.</summary>
-        [DataMember] public int TintOpacity { get => _tintOpacity; set => Set(ref _tintOpacity, Math.Max(0, Math.Min(100, value))); }
+        /// <summary>Opacity (0..100) of the tint layer over the backdrop, used when AutoOpacity is off.</summary>
+        [DataMember] public int TintOpacity
+        {
+            get => _tintOpacity;
+            set { Set(ref _tintOpacity, Math.Max(0, Math.Min(100, value))); Touch(nameof(Transparency)); }
+        }
+
+        /// <summary>Transparency as shown to the user (100 % = pure Windows material, 0 % = opaque). Mirrors TintOpacity.</summary>
+        public int Transparency
+        {
+            get => 100 - _tintOpacity;
+            set => TintOpacity = 100 - value;
+        }
+
+        private bool _autoOpacity;
+        /// <summary>Use a per-material default opacity instead of TintOpacity.</summary>
+        [DataMember] public bool AutoOpacity { get => _autoOpacity; set => Set(ref _autoOpacity, value); }
 
         private CornerStyle _corners;
         [DataMember] public CornerStyle Corners { get => _corners; set => Set(ref _corners, value); }
@@ -126,6 +143,10 @@ namespace DownloadsOSX.Models
 
         private ViewMode _viewMode;
         [DataMember] public ViewMode ViewMode { get => _viewMode; set => Set(ref _viewMode, value); }
+
+        private int _gridColumns;
+        /// <summary>Columns the grid view is sized for (tiles stretch to fill the row).</summary>
+        [DataMember] public int GridColumns { get => _gridColumns; set => Set(ref _gridColumns, Math.Max(2, Math.Min(8, value))); }
 
         private bool _groupByDate;
         [DataMember] public bool GroupByDate { get => _groupByDate; set => Set(ref _groupByDate, value); }

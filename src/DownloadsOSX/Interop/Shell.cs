@@ -16,19 +16,60 @@ namespace DownloadsOSX.Interop
     {
         private static readonly Guid FOLDERID_Downloads = new Guid("374DE290-123F-4565-9164-39C4925E467B");
 
-        public static string GetDownloadsFolder()
+        /// <summary>Standard Windows folders with an app-localized name (resource key), resolved through redirection/OneDrive.</summary>
+        private static readonly (Guid Id, string Key)[] NamedFolders =
+        {
+            (FOLDERID_Downloads, "FolderDownloads"),
+            (new Guid("FDD39AD0-238F-46AF-ADB4-6C85480369C7"), "FolderDocuments"),
+            (new Guid("B4BFCC3A-DB2C-424C-B029-7FE99A87C641"), "FolderDesktop"),
+            (new Guid("33E28130-4E1E-4676-835A-98395C3BC3BB"), "FolderPictures"),
+            (new Guid("4BD8D571-6D19-48D3-BE97-422220080E43"), "FolderMusic"),
+            (new Guid("18989B1D-99B5-455B-841C-AB7C74E4DDFC"), "FolderVideos"),
+            (new Guid("B7BEDE81-DF94-4682-A7D8-57A52620B86F"), "FolderScreenshots"),
+        };
+
+        private static string GetKnownFolder(Guid id)
         {
             try
             {
-                if (NativeMethods.SHGetKnownFolderPath(FOLDERID_Downloads, 0, IntPtr.Zero, out IntPtr p) == 0)
+                if (NativeMethods.SHGetKnownFolderPath(id, 0, IntPtr.Zero, out IntPtr p) == 0)
                 {
                     try { return Marshal.PtrToStringUni(p); }
                     finally { Marshal.FreeCoTaskMem(p); }
                 }
             }
-            catch (Exception ex) { Log.Warn("SHGetKnownFolderPath failed", ex); }
+            catch (Exception ex) { Log.Debug("SHGetKnownFolderPath failed: " + ex.Message); }
+            return null; // e.g. Screenshots doesn't exist before Windows 8
+        }
 
-            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+        public static string GetDownloadsFolder()
+        {
+            return GetKnownFolder(FOLDERID_Downloads)
+                   ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+        }
+
+        /// <summary>
+        /// Title for a watched folder: the app-localized name of a standard Windows folder (Downloads, Documents, …),
+        /// otherwise the folder's own name (or the drive/path for a root).
+        /// </summary>
+        public static string GetFolderTitle(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return App.Str("AppTitle");
+            string norm = Normalize(path);
+            foreach (var (id, key) in NamedFolders)
+            {
+                string known = GetKnownFolder(id);
+                if (known != null && string.Equals(Normalize(known), norm, StringComparison.OrdinalIgnoreCase))
+                    return App.Str(key);
+            }
+            string name = Path.GetFileName(path.TrimEnd('\\', '/'));
+            return string.IsNullOrEmpty(name) ? path : name;
+        }
+
+        private static string Normalize(string path)
+        {
+            try { path = Path.GetFullPath(path); } catch { }
+            return path.TrimEnd('\\', '/');
         }
 
         public static void Open(string path)
@@ -135,20 +176,6 @@ namespace DownloadsOSX.Interop
         public static bool RemoveZoneIdentifier(string path)
         {
             return NativeMethods.DeleteFile(path + ":Zone.Identifier");
-        }
-
-        /// <summary>Localized shell name of a folder ("Загрузки" for C:\Users\x\Downloads).</summary>
-        public static string GetDisplayName(string path)
-        {
-            try
-            {
-                var info = new NativeMethods.SHFILEINFO();
-                if (NativeMethods.SHGetFileInfo(path, 0, ref info, (uint)Marshal.SizeOf(info), NativeMethods.SHGFI_DISPLAYNAME) != IntPtr.Zero
-                    && !string.IsNullOrEmpty(info.szDisplayName))
-                    return info.szDisplayName;
-            }
-            catch { }
-            return Path.GetFileName(path.TrimEnd('\\'));
         }
 
         public static string GetTypeName(string path, bool isFolder)

@@ -51,13 +51,13 @@ Runs on **Windows 7 SP1 through Windows 11** (.NET Framework 4.8), as a single p
 
 ## Install
 
-1. Download `Downloads.exe` from the [latest release](../../releases/latest) and put it anywhere you like (for example `%AppData%\DownloadsOSX`).
+1. Download `Downloads.exe` from the [latest release](../../releases/latest) and put it anywhere you like (for example `%AppData%\fhnb16\DownloadsOSX`).
 2. Run it, then right-click its taskbar button → **Pin to taskbar**.
 3. Optional: *Settings → Behavior → Start with Windows*.
 
 Clicking the pinned icon now opens the stack right above it; clicking anywhere else hides it.
 
-**Portable mode:** create an empty `portable.flag` file next to the exe and settings are stored beside it instead of `%AppData%\DownloadsOSX`.
+**Portable mode:** create an empty `portable.flag` file next to the exe and settings are stored beside it instead of `%AppData%\fhnb16\DownloadsOSX`.
 
 ## Keyboard
 
@@ -75,6 +75,7 @@ Clicking the pinned icon now opens the stack right above it; clicking anywhere e
 | <kbd>Alt+Enter</kbd> | Properties |
 | <kbd>Apps</kbd> / <kbd>Shift+F10</kbd> | Explorer context menu |
 | Type letters | Filter by name |
+| <kbd>Ctrl+G</kbd> | Switch list / grid |
 | <kbd>F5</kbd> | Refresh |
 | <kbd>Esc</kbd> | Clear filter, then hide |
 | <kbd>Ctrl+0</kbd> / <kbd>Ctrl+1</kbd>, <kbd>+</kbd> / <kbd>−</kbd>, double-click | Image preview: fit / 100 %, zoom |
@@ -86,7 +87,7 @@ Pick a material in *Settings → Appearance*. If the running Windows can't do it
 
 | Windows | Mica | Mica Alt | Acrylic | Blur |
 |---|---|---|---|---|
-| 11 22H2+ | Mica | Mica Alt | Acrylic | → Acrylic |
+| 11 22H2+ | Mica | Mica Alt | Acrylic | Blur |
 | 11 21H2 | Mica | → Mica | Acrylic | Blur |
 | 10 1803+ | → Acrylic | → Acrylic | Acrylic | Blur |
 | 10 (older) | → Blur | → Blur | → Blur | Blur |
@@ -95,17 +96,19 @@ Pick a material in *Settings → Appearance*. If the running Windows can't do it
 | Composition off (Basic/Classic theme) | Solid ||||
 
 *Automatic* uses Acrylic for the stack and preview (short-lived surfaces) and Mica for the settings window.
-Tip: tools such as Mica For Everyone override window backdrops globally — add an exclusion for `Downloads.exe` to see the app's own materials.
+
+**Transparency** (*Settings → Appearance*) controls one tint layer over the material, in the tint color (theme color or custom). *Automatic* picks a sensible value per material; turn it off and use the slider: 100 % = the pure material, 0 % = a solid color. On Windows 11 Mica / Mica Alt / Acrylic, Windows' own tint always stays, so 100 % means "exactly the system look"; *Blur* (and Acrylic on Windows 10) has no built-in tint, so it can go all the way to clear glass. Note that Windows draws Mica and Acrylic flat while a window is inactive.
+Tip: tools such as Mica For Everyone override window backdrops globally (the settings page warns when it is running). Add a rule for the `Downloads` process with backdrop *Default* and title bar color *Default* to see the app's own materials.
 
 ## Settings overview
 
-- **Appearance** — backdrop, theme, tint color/opacity, corner style, view (list/grid), item size, details line, date groups, newest-near-taskbar, font, font size, animations
+- **Appearance** — backdrop, theme, tint color, transparency (auto or 0–100 %), corner style, view (list/grid) and grid columns, item size, details line, date groups, newest-near-taskbar, font, font size, animations
 - **Behavior** — Downloads folder override, extra folders, item count, sort, folders/hidden/unfinished files, taskbar/tray/both, open position (cursor / center / remembered), hide on focus loss, single-click open, delete confirmation, global hotkey, start with Windows, language
 - **Notifications** — taskbar badge, flash, sound, balloon, Jump List and its size
 - **Preview** — enable media / text / document previews, autoplay, loop, keep zoom between images
 - **Updates** — notify / install automatically / off, check now, skipped version
 
-Settings live in `%AppData%\DownloadsOSX\settings.json` (with a `log.txt` next to it).
+Settings live in `%AppData%\fhnb16\DownloadsOSX\settings.json` (with a `log.txt` next to it).
 
 ## Building
 
@@ -144,6 +147,10 @@ To test backdrop fallbacks on a newer Windows, set `DOWNLOADSOSX_OS_BUILD` (e.g.
 - If the folder isn't writable (e.g. Program Files), the downloaded exe installs itself with a single UAC prompt and relaunches the app un-elevated.
 - *Install automatically* mode downloads in the background and swaps only while the stack is hidden and idle.
 - **Testing:** add `"UpdateManifestUrls": ["http://localhost:8765/update.json"]` to `settings.json` (plain HTTP is accepted for localhost only) and serve a manifest + exe from a local folder.
+
+### Code signing and Smart App Control
+
+Windows 11 **Smart App Control** (and SmartScreen) can block unsigned executables with no reputation — including freshly built or freshly downloaded versions of `Downloads.exe`. Signing releases with a code-signing certificate avoids this. The updater is defensive about it: if the new version is blocked from starting, the previous exe is restored and the error is shown in the update dialog, so the app is never left broken.
 
 ### Migrating users of the legacy version
 

@@ -71,6 +71,7 @@ namespace DownloadsOSX.Services
                 case nameof(AppSettings.TintMode):
                 case nameof(AppSettings.TintColor):
                 case nameof(AppSettings.TintOpacity):
+                case nameof(AppSettings.AutoOpacity):
                 case nameof(AppSettings.Corners):
                 case nameof(AppSettings.RoundOldWindows):
                 case nameof(AppSettings.Animations):
@@ -113,7 +114,7 @@ namespace DownloadsOSX.Services
                 case NativeMethods.WM_ENTERSIZEMOVE:
                     // Win10 SWCA acrylic lags badly while dragging; switch to plain blur until the move ends.
                     _inSizeMove = true;
-                    if (_accentActive && Effective == BackdropKind.Acrylic) SetAccent(NativeMethods.AccentState.EnableBlurBehind, TintColor(), TintAlpha(true));
+                    if (_accentActive && Effective == BackdropKind.Acrylic) SetAccent(NativeMethods.AccentState.EnableBlurBehind, TintColor(), AccentAlpha());
                     break;
                 case NativeMethods.WM_EXITSIZEMOVE:
                     _inSizeMove = false;
@@ -166,10 +167,10 @@ namespace DownloadsOSX.Services
                 case BackdropKind.Acrylic:
                     ok = OsInfo.SupportsSystemBackdrop
                         ? SetSystemBackdrop(3)
-                        : SetAccent(_inSizeMove ? NativeMethods.AccentState.EnableBlurBehind : NativeMethods.AccentState.EnableAcrylicBlurBehind, TintColor(), TintAlpha(true));
+                        : SetAccent(_inSizeMove ? NativeMethods.AccentState.EnableBlurBehind : NativeMethods.AccentState.EnableAcrylicBlurBehind, TintColor(), AccentAlpha());
                     break;
                 case BackdropKind.Blur:
-                    ok = OsInfo.SupportsAccentBlur ? SetAccent(NativeMethods.AccentState.EnableBlurBehind, TintColor(), 0) : true; // Win7: Aero glass from the extended frame
+                    ok = OsInfo.SupportsAccentBlur ? SetAccent(NativeMethods.AccentState.EnableBlurBehind, Colors.Black, 0) : true; // untinted; tint is the overlay. Win7: Aero glass from the extended frame
                     break;
             }
 
@@ -182,13 +183,33 @@ namespace DownloadsOSX.Services
                 ExtendFrame(false);
             }
 
-            _window.Background = BackgroundFor(effective, dark);
+            _window.Background = BackgroundFor(effective);
 
             if (Effective != effective)
             {
                 Effective = effective;
                 EffectiveChanged?.Invoke(this);
             }
+        }
+
+        /// <summary>
+        /// Name of a running tool that forces its own backdrop on every window (our settings then have no visible effect),
+        /// or null. Mica For Everyone is the common one.
+        /// </summary>
+        public static string DetectOverrideTool()
+        {
+            try
+            {
+                foreach (var p in System.Diagnostics.Process.GetProcesses())
+                {
+                    using (p)
+                    {
+                        if (p.ProcessName.StartsWith("MicaForEveryone", StringComparison.OrdinalIgnoreCase)) return "Mica For Everyone";
+                    }
+                }
+            }
+            catch { }
+            return null;
         }
 
         /// <summary>Maps a requested backdrop to what the OS can actually do.</summary>
@@ -208,59 +229,63 @@ namespace DownloadsOSX.Services
             return BackdropKind.Solid;
         }
 
-        private Brush BackgroundFor(BackdropKind kind, bool dark)
-        {
-            var s = App.Settings;
-            Color solid = dark ? Color.FromRgb(0x20, 0x20, 0x20) : Color.FromRgb(0xF3, 0xF3, 0xF3);
-            Color custom = ThemeService.ParseColor(s.TintColor, solid);
-            bool isCustom = s.TintMode == TintMode.Custom;
+        // ---- Tint layer -------------------------------------------------------------------------------------
+        // Every material gets one tint layer: a color (theme or custom) at an opacity (per-material default or the
+        // user's value). Where it goes depends on the mechanism:
+        //   * DWM system backdrops (Mica, Mica Alt, Win11 Acrylic): Window.Background overlay. Windows' own tint stays,
+        //     so 0 % opacity = the pure system material, higher = more solid.
+        //   * SetWindowCompositionAttribute acrylic (Win10, Win11 21H2): the accent policy's GradientColor (true acrylic
+        //     tint — 0 % is nearly clear glass).
+        //   * SWCA blur (Win10/11) and Aero glass (Win7): Window.Background overlay over an untinted blur.
+        //   * Solid: the color, opaque.
 
-            Color c;
+        /// <summary>Default tint opacity (0..100) per material, used when "Auto" transparency is on.</summary>
+        public static int AutoOpacityFor(BackdropKind kind, bool dark)
+        {
             switch (kind)
             {
-                case BackdropKind.Solid:
-                    c = isCustom ? Color.FromRgb(custom.R, custom.G, custom.B) : solid;
-                    break;
-                case BackdropKind.Acrylic when _accentActive:
-                    c = Colors.Transparent; // tint is part of the accent policy
-                    break;
-                case BackdropKind.Blur when !OsInfo.SupportsAccentBlur:
-                    // Windows 7 glass: a light/dark wash keeps text readable on any colorization.
-                    c = isCustom ? WithAlpha(custom, s.TintOpacity) : (dark ? Color.FromArgb(0x80, 0, 0, 0) : Color.FromArgb(0x60, 0xFF, 0xFF, 0xFF));
-                    break;
-                case BackdropKind.Blur:
-                    c = isCustom ? WithAlpha(custom, s.TintOpacity) : (dark ? Color.FromArgb(0x99, 0x1C, 0x1C, 0x1C) : Color.FromArgb(0x99, 0xF3, 0xF3, 0xF3));
-                    break;
-                default:
-                    // Mica / Mica Alt / system Acrylic already tint by theme; only overlay a custom tint.
-                    c = isCustom ? WithAlpha(custom, s.TintOpacity) : Colors.Transparent;
-                    break;
+                case BackdropKind.Solid: return 100;
+                case BackdropKind.Acrylic: return OsInfo.SupportsSystemBackdrop ? 0 : (dark ? 60 : 55);
+                case BackdropKind.Blur: return OsInfo.SupportsAccentBlur ? (dark ? 55 : 50) : (dark ? 50 : 38);
+                default: return 0; // Mica / Mica Alt: Windows already tints them
             }
+        }
+
+        /// <summary>Tint opacity in effect for a material (0..100).</summary>
+        public static int OpacityFor(BackdropKind kind)
+        {
+            if (kind == BackdropKind.Solid) return 100;
+            return App.Settings.AutoOpacity ? AutoOpacityFor(kind, ThemeService.IsDark) : App.Settings.TintOpacity;
+        }
+
+        private static Color TintColor()
+        {
+            var s = App.Settings;
+            Color auto = ThemeService.IsDark ? Color.FromRgb(0x20, 0x20, 0x20) : Color.FromRgb(0xF3, 0xF3, 0xF3);
+            return s.TintMode == TintMode.Custom ? ThemeService.ParseColor(s.TintColor, auto) : auto;
+        }
+
+        private static byte Alpha(int percent) => (byte)Math.Round(255 * Math.Max(0, Math.Min(100, percent)) / 100.0);
+
+        private Brush BackgroundFor(BackdropKind kind)
+        {
+            Color tint = TintColor();
+            Color c;
+            if (kind == BackdropKind.Solid) c = Color.FromRgb(tint.R, tint.G, tint.B);
+            else if (kind == BackdropKind.Acrylic && _accentActive) c = Colors.Transparent; // tint lives in the accent policy
+            else c = Color.FromArgb(Alpha(OpacityFor(kind)), tint.R, tint.G, tint.B);
+
             var b = new SolidColorBrush(c);
             b.Freeze();
             return b;
         }
 
+        /// <summary>GradientColor alpha for SWCA acrylic. 0 makes some Windows 10 builds render it black, so keep ≥ 1.</summary>
+        private static byte AccentAlpha() => Math.Max((byte)1, Alpha(OpacityFor(BackdropKind.Acrylic)));
+
         // DWM_WINDOW_CORNER_PREFERENCE: 0 default, 1 do not round, 2 round, 3 round small.
         private static int CornerValue(CornerStyle c) =>
             c == CornerStyle.Round ? 2 : c == CornerStyle.Small ? 3 : c == CornerStyle.Square ? 1 : 0;
-
-        private static Color WithAlpha(Color c, int percent) => Color.FromArgb((byte)(255 * percent / 100), c.R, c.G, c.B);
-
-        private Color TintColor()
-        {
-            var s = App.Settings;
-            Color auto = ThemeService.IsDark ? Color.FromRgb(0x1C, 0x1C, 0x1C) : Color.FromRgb(0xF0, 0xF0, 0xF0);
-            return s.TintMode == TintMode.Custom ? ThemeService.ParseColor(s.TintColor, auto) : auto;
-        }
-
-        private byte TintAlpha(bool acrylic)
-        {
-            var s = App.Settings;
-            int percent = s.TintMode == TintMode.Custom ? s.TintOpacity : (ThemeService.IsDark ? 60 : 55);
-            int a = 255 * percent / 100;
-            return (byte)Math.Max(acrylic ? 1 : 0, a); // alpha 0 breaks SWCA acrylic on some builds
-        }
 
         private void ExtendFrame(bool glass)
         {

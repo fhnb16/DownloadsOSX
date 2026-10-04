@@ -141,11 +141,10 @@
     <s:String x:Key="ThemeSystem">System</s:String>
     <s:String x:Key="ThemeLight">Light</s:String>
     <s:String x:Key="ThemeDark">Dark</s:String>
-    <s:String x:Key="Tint">Tint</s:String>
-    <s:String x:Key="TintHint">Color laid over the backdrop. Higher opacity is more readable, lower is more transparent.</s:String>
+    <s:String x:Key="Tint">Tint color</s:String>
+    <s:String x:Key="TintHint">Color of the layer over the backdrop. Automatic follows the light/dark theme.</s:String>
     <s:String x:Key="TintAuto">Automatic</s:String>
     <s:String x:Key="TintCustom">Custom</s:String>
-    <s:String x:Key="TintOpacity">Tint opacity</s:String>
     <s:String x:Key="AccentColor">Windows accent color</s:String>
     <s:String x:Key="Corners">Corners</s:String>
     <s:String x:Key="CornersHint">Window corner style on Windows 11.</s:String>
@@ -253,7 +252,7 @@
     <s:String x:Key="UpdateSources">Update sources (tried in order)</s:String>
 
     <!-- Settings: about -->
-    <s:String x:Key="ProjectPage">Project page</s:String>
+    <s:String x:Key="DeveloperSite">Developer's website</s:String>
     <s:String x:Key="OpenSettingsFolder">Settings folder</s:String>
     <s:String x:Key="OpenLog">Log file</s:String>
     <s:String x:Key="SettingsFile">Settings</s:String>
@@ -272,4 +271,21 @@
     <s:String x:Key="ShortcutPreviewNav">Previous / next item in preview</s:String>
     <s:String x:Key="ShortcutZoom">Fit / actual size in image preview</s:String>
     <s:String x:Key="ShortcutMedia">Play-pause / back / forward in media preview</s:String>
+    <s:String x:Key="GridColumns">Columns in grid</s:String>
+    <s:String x:Key="ShortcutToggleView">Switch list / grid</s:String>
+    <!-- Standard folder names (stack title) -->
+    <s:String x:Key="FolderDownloads">Downloads</s:String>
+    <s:String x:Key="FolderDocuments">Documents</s:String>
+    <s:String x:Key="FolderDesktop">Desktop</s:String>
+    <s:String x:Key="FolderPictures">Pictures</s:String>
+    <s:String x:Key="FolderMusic">Music</s:String>
+    <s:String x:Key="FolderVideos">Videos</s:String>
+    <s:String x:Key="FolderScreenshots">Screenshots</s:String>
+    <!-- Transparency -->
+    <s:String x:Key="TransparencyAuto">Automatic transparency</s:String>
+    <s:String x:Key="TransparencyHint">The best value for each material. Turn off to set it yourself: 100 % shows the pure Windows material, 0 % is a solid color.</s:String>
+    <s:String x:Key="Transparency">Transparency</s:String>
+    <s:String x:Key="TransparencyAutoValue">auto, {0} %</s:String>
+    <s:String x:Key="TransparencySolid">Not used with the Solid backdrop</s:String>
+    <s:String x:Key="BackdropOverridden">{0} is running and replaces window backdrops, so changes here may not be visible. Add Downloads.exe to its exclusions.</s:String>
 </ResourceDictionary>

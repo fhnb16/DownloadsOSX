@@ -54,7 +54,7 @@ namespace DownloadsOSX.Services
         public const string GitHubRepo = "fhnb16/DownloadsOSX";
         public const string ServerManifest = "https://root.fhnb.ru/DownloadsOSX/update.json";
         public static string GitHubManifest => $"https://github.com/{GitHubRepo}/releases/latest/download/update.json";
-        public static string ProjectPage => $"https://github.com/{GitHubRepo}";
+        public static string ProjectPage => Models.Links.GitHub;
 
         private static readonly TimeSpan CheckInterval = TimeSpan.FromHours(24);
         private readonly AppSettings _settings;
@@ -263,7 +263,18 @@ namespace DownloadsOSX.Services
                 File.Move(exe, old); // allowed while running
                 try { File.Move(downloaded, exe); }
                 catch { File.Move(old, exe); throw; }
-                Process.Start(new ProcessStartInfo(exe, args) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(exe) });
+                try
+                {
+                    Process.Start(new ProcessStartInfo(exe, args) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(exe) });
+                }
+                catch (Exception ex)
+                {
+                    // E.g. Smart App Control / AppLocker blocks the new (unsigned) binary: put the working version back.
+                    Log.Warn("New version could not be started, rolling back", ex);
+                    try { File.Delete(exe); } catch { }
+                    File.Move(old, exe);
+                    throw;
+                }
             }
             else
             {

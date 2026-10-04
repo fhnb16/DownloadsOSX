@@ -59,6 +59,14 @@ namespace DownloadsOSX.Views
 
             BuildSwatches();
             BuildShortcuts();
+            _overrideTool = BackdropController.DetectOverrideTool();
+            Activated += (s, e) =>
+            {
+                _overrideTool = BackdropController.DetectOverrideTool(); // the tool may have been closed meanwhile
+                RefreshBackdropStatus();
+            };
+            ThemeService.Changed += RefreshBackdropStatus;
+            Closed += (s, e) => ThemeService.Changed -= RefreshBackdropStatus;
             Refresh();
         }
 
@@ -69,6 +77,11 @@ namespace DownloadsOSX.Views
         {
             switch (e.PropertyName)
             {
+                case nameof(AppSettings.AutoOpacity):
+                case nameof(AppSettings.TintOpacity):
+                    Dispatcher.BeginInvoke(new Action(RefreshBackdropStatus));
+                    break;
+                case nameof(AppSettings.ViewMode):
                 case nameof(AppSettings.TintMode):
                 case nameof(AppSettings.TintColor):
                 case nameof(AppSettings.Backdrop):
@@ -90,6 +103,7 @@ namespace DownloadsOSX.Views
             CornersCard.IsEnabled = OsInfo.SupportsCornerPreference;
             CornersCard.ToolTip = OsInfo.SupportsCornerPreference ? null : App.Str("Win11Only");
             RoundOldCard.Visibility = OsInfo.IsWin11 ? Visibility.Collapsed : Visibility.Visible;
+            GridColumnsCard.Visibility = _s.ViewMode == ViewMode.Grid ? Visibility.Visible : Visibility.Collapsed;
             RefreshBackdropStatus();
 
             // Behavior
@@ -111,12 +125,26 @@ namespace DownloadsOSX.Views
                 : "pack://application:,,,/Downloads;component/Assets/Images/pinTen.png"));
         }
 
+        private string _overrideTool;
+
         private void RefreshBackdropStatus()
         {
             var requested = _s.Backdrop;
             var effective = BackdropController.Get(App.Stack)?.Effective ?? BackdropController.Resolve(requested);
             bool fallback = requested != BackdropKind.Auto && requested != effective;
             BackdropStatus.Text = string.Format(App.Str(fallback ? "BackdropFallback" : "BackdropActive"), BackdropName(effective), OsInfo.Describe());
+
+            OverrideWarning.Visibility = _overrideTool != null ? Visibility.Visible : Visibility.Collapsed;
+            if (_overrideTool != null) OverrideWarning.Text = string.Format(App.Str("BackdropOverridden"), _overrideTool);
+
+            // Transparency: meaningless for Solid; slider only when not automatic.
+            bool solid = effective == BackdropKind.Solid;
+            TransparencyCard.IsEnabled = !solid;
+            TransparencyCard.ToolTip = solid ? App.Str("TransparencySolid") : null;
+            TransparencyRow.IsEnabled = !_s.AutoOpacity;
+            TransparencyValue.Text = _s.AutoOpacity
+                ? string.Format(App.Str("TransparencyAutoValue"), 100 - BackdropController.AutoOpacityFor(effective, ThemeService.IsDark))
+                : _s.Transparency + " %";
         }
 
         private static string BackdropName(BackdropKind k) => App.Str("Backdrop" + k);
@@ -279,7 +307,8 @@ namespace DownloadsOSX.Views
 
         private void ResetSkipped_Click(object sender, RoutedEventArgs e) => _s.SkippedVersion = "";
 
-        private void ProjectPage_Click(object sender, RoutedEventArgs e) => Start(UpdateService.ProjectPage);
+        private void GitHub_Click(object sender, RoutedEventArgs e) => Start(Links.GitHub);
+        private void DeveloperSite_Click(object sender, RoutedEventArgs e) => Start(Links.Developer);
         private void OpenSettingsFolder_Click(object sender, RoutedEventArgs e) => Start(App.Store.Folder);
         private void OpenLog_Click(object sender, RoutedEventArgs e) { if (Log.FilePath != null) Start(Log.FilePath); }
 
@@ -295,7 +324,7 @@ namespace DownloadsOSX.Views
                 ("Enter", "ShortcutOpen"), ("Space", "ShortcutPreview"), ("Del / Shift+Del", "ShortcutDelete"),
                 ("F2", "ShortcutRename"), ("Ctrl+C / Ctrl+X", "ShortcutCopy"), ("Ctrl+Shift+C", "CopyPath"),
                 ("Ctrl+E", "ShowInFolder"), ("Ctrl+O", "OpenFolder"), ("Alt+Enter", "ShortcutProperties"),
-                (App.Str("ShortcutTypeKey"), "ShortcutFilter"), ("F5", "Refresh"), ("Esc", "ShortcutHide"),
+                (App.Str("ShortcutTypeKey"), "ShortcutFilter"), ("Ctrl+G", "ShortcutToggleView"), ("F5", "Refresh"), ("Esc", "ShortcutHide"),
                 ("← / →", "ShortcutPreviewNav"), ("Ctrl+0 / Ctrl+1", "ShortcutZoom"), ("K / J / L", "ShortcutMedia"),
             };
             int r = 0;

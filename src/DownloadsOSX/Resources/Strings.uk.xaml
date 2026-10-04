@@ -141,11 +141,10 @@
     <s:String x:Key="ThemeSystem">Системна</s:String>
     <s:String x:Key="ThemeLight">Світла</s:String>
     <s:String x:Key="ThemeDark">Темна</s:String>
-    <s:String x:Key="Tint">Відтінок</s:String>
-    <s:String x:Key="TintHint">Колір поверх фону. Вища непрозорість — краща читабельність, нижча — більше прозорості.</s:String>
+    <s:String x:Key="Tint">Колір підкладки</s:String>
+    <s:String x:Key="TintHint">Колір шару поверх фону. «Автоматично» — за світлою чи темною темою.</s:String>
     <s:String x:Key="TintAuto">Автоматично</s:String>
     <s:String x:Key="TintCustom">Власний</s:String>
-    <s:String x:Key="TintOpacity">Непрозорість</s:String>
     <s:String x:Key="AccentColor">Колір акценту Windows</s:String>
     <s:String x:Key="Corners">Кути</s:String>
     <s:String x:Key="CornersHint">Форма кутів вікна у Windows 11.</s:String>
@@ -253,7 +252,7 @@
     <s:String x:Key="UpdateSources">Джерела оновлень (по черзі)</s:String>
 
     <!-- Settings: about -->
-    <s:String x:Key="ProjectPage">Сторінка проєкту</s:String>
+    <s:String x:Key="DeveloperSite">Сайт розробника</s:String>
     <s:String x:Key="OpenSettingsFolder">Тека налаштувань</s:String>
     <s:String x:Key="OpenLog">Журнал</s:String>
     <s:String x:Key="SettingsFile">Налаштування</s:String>
@@ -272,4 +271,21 @@
     <s:String x:Key="ShortcutPreviewNav">Попередній / наступний файл у перегляді</s:String>
     <s:String x:Key="ShortcutZoom">За розміром вікна / 100% під час перегляду зображень</s:String>
     <s:String x:Key="ShortcutMedia">Пауза / назад / вперед під час перегляду відео</s:String>
+    <s:String x:Key="GridColumns">Колонок у сітці</s:String>
+    <s:String x:Key="ShortcutToggleView">Перемкнути список / сітку</s:String>
+    <!-- Standard folder names (stack title) -->
+    <s:String x:Key="FolderDownloads">Завантаження</s:String>
+    <s:String x:Key="FolderDocuments">Документи</s:String>
+    <s:String x:Key="FolderDesktop">Робочий стіл</s:String>
+    <s:String x:Key="FolderPictures">Зображення</s:String>
+    <s:String x:Key="FolderMusic">Музика</s:String>
+    <s:String x:Key="FolderVideos">Відео</s:String>
+    <s:String x:Key="FolderScreenshots">Знімки екрана</s:String>
+    <!-- Transparency -->
+    <s:String x:Key="TransparencyAuto">Автоматична прозорість</s:String>
+    <s:String x:Key="TransparencyHint">Відповідне значення для кожного матеріалу. Вимкніть, щоб задати вручну: 100 % — чистий матеріал Windows, 0 % — суцільний колір.</s:String>
+    <s:String x:Key="Transparency">Прозорість</s:String>
+    <s:String x:Key="TransparencyAutoValue">авто, {0} %</s:String>
+    <s:String x:Key="TransparencySolid">Не використовується із суцільним фоном</s:String>
+    <s:String x:Key="BackdropOverridden">Запущено {0} — він підміняє фон усіх вікон, тому зміни тут можуть бути не видні. Додайте Downloads.exe до його винятків.</s:String>
 </ResourceDictionary>
