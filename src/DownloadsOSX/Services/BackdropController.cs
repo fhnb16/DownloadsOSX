@@ -125,7 +125,7 @@ namespace DownloadsOSX.Services
                     _window.Dispatcher.BeginInvoke(new Action(Apply));
                     break;
                 case NativeMethods.WM_SIZE:
-                    if (App.Settings.RoundOldWindows && !OsInfo.IsWin11) ApplyRegion();
+                    if (NeedsRegion || _hasRegion) ApplyRegion();
                     break;
             }
             return IntPtr.Zero;
@@ -153,7 +153,6 @@ namespace DownloadsOSX.Services
             SetDwm(NativeMethods.DWMWA_TRANSITIONS_FORCEDISABLED, s.Animations ? 0 : 1);
             if (OsInfo.SupportsCornerPreference)
                 SetDwm(NativeMethods.DWMWA_WINDOW_CORNER_PREFERENCE, CornerValue(s.Corners));
-            ApplyRegion();
 
             bool ok = true;
             switch (effective)
@@ -184,6 +183,7 @@ namespace DownloadsOSX.Services
             }
 
             _window.Background = BackgroundFor(effective);
+            ApplyRegion(); // after the accent: whether a region is needed depends on it
 
             if (Effective != effective)
             {
@@ -323,22 +323,46 @@ namespace DownloadsOSX.Services
             WindowChrome.SetWindowChrome(_window, copy);
         }
 
+        /// <summary>
+        /// Window region on Windows 10/8/7. Two reasons to set one:
+        ///  * the "rounded corners on older Windows" option (round-rect region);
+        ///  * Win10 SetWindowCompositionAttribute blur/acrylic: without a region DWM paints its own (opaque black)
+        ///    frame under our extended glass, so transparent pixels show black instead of the accent. A plain
+        ///    rectangular region switches DWM's frame drawing off and the accent shows through.
+        /// Never on Windows 11 — a region disables DWM's rounded corners and shadow there.
+        /// </summary>
+        private bool NeedsRegion => !OsInfo.IsWin11 && (App.Settings.RoundOldWindows || _accentActive);
+
         private void ApplyRegion()
         {
             if (_hwnd == IntPtr.Zero) return;
-            if (App.Settings.RoundOldWindows && !OsInfo.IsWin11 && _window.WindowState != WindowState.Maximized)
+            var state = _window.WindowState;
+            if (state == WindowState.Minimized) return; // the 160×28 iconic stub; WM_SIZE re-applies on restore
+
+            if (NeedsRegion && state != WindowState.Maximized)
             {
                 NativeMethods.GetWindowRect(_hwnd, out var r);
-                double scale = VisualTreeHelper.GetDpi(_window).DpiScaleX;
-                int d = (int)Math.Round(16 * scale);
-                IntPtr rgn = NativeMethods.CreateRoundRectRgn(0, 0, r.Width + 1, r.Height + 1, d, d);
+                IntPtr rgn;
+                if (App.Settings.RoundOldWindows)
+                {
+                    int d = (int)Math.Round(16 * VisualTreeHelper.GetDpi(_window).DpiScaleX);
+                    rgn = NativeMethods.CreateRoundRectRgn(0, 0, r.Width + 1, r.Height + 1, d, d);
+                }
+                else
+                {
+                    rgn = NativeMethods.CreateRectRgn(0, 0, r.Width, r.Height);
+                }
                 if (NativeMethods.SetWindowRgn(_hwnd, rgn, true) == 0) NativeMethods.DeleteObject(rgn); // system owns it on success
+                _hasRegion = true;
             }
-            else
+            else if (_hasRegion)
             {
                 NativeMethods.SetWindowRgn(_hwnd, IntPtr.Zero, true);
+                _hasRegion = false;
             }
         }
+
+        private bool _hasRegion;
 
         private void ResetNative()
         {
