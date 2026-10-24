@@ -122,19 +122,20 @@ msbuild src/DownloadsOSX/DownloadsOSX.csproj -restore -p:Configuration=Release
 
 The output is a single `src/DownloadsOSX/bin/Release/net48/Downloads.exe`. The .NET 4.8 targeting pack is not required (the `Microsoft.NETFramework.ReferenceAssemblies` build package supplies it). If you switch between `dotnet build` and Visual Studio's MSBuild and see `*.g.cs not found` errors, delete `src/DownloadsOSX/obj`.
 
-Every push and pull request is built by the [Build workflow](.github/workflows/build.yml); the resulting `Downloads.exe` is attached to the run as an artifact (kept 30 days).
+Pushes to other branches and pull requests are built by the [Build workflow](.github/workflows/build.yml); the resulting `Downloads.exe` is attached to the run as an artifact (kept 30 days). `master` is built by the Release workflow (see below).
 
 To test backdrop fallbacks on a newer Windows, set `DOWNLOADSOSX_OS_BUILD` (e.g. `19045` for Windows 10, `7601` for Windows 7) before launching.
 
 ## Releasing
 
-1. Tag and push:
+1. Bump `<Version>` in `src/DownloadsOSX/DownloadsOSX.csproj` (and `assemblyIdentity version` in `app.manifest`) and push to `master`. The commit message becomes the release notes shown in the in-app update dialog.
+   Alternatively, tag and push by hand (the tag message becomes the notes):
    ```powershell
-   git tag -a v1.2.0 -m "What changed (shown in the in-app update dialog)"
+   git tag -a v1.2.0 -m "What changed"
    git push origin v1.2.0
    ```
-2. The [Release workflow](.github/workflows/release.yml) builds with the version from the tag, generates `update.json` (version, download URL, SHA-256, notes) and publishes a GitHub release with `Downloads.exe` + `update.json`.
-   Tags with a suffix (`v1.2.0-rc1`) become pre-releases, which installed apps ignore.
+2. The [Release workflow](.github/workflows/release.yml) builds with that version, generates `update.json` (version, download URL, SHA-256, notes) and publishes a GitHub release `v<version>` with `Downloads.exe` + `update.json`. A `master` push whose version already has a tag only builds an artifact, without publishing.
+   Versions with a suffix (`1.2.0-rc1`) become pre-releases, which installed apps ignore.
 3. **Own server mirror (fallback source):** upload the same `Downloads.exe` and a manifest pointing at it:
    ```powershell
    ./tools/make-manifest.ps1 -Exe dist/Downloads.exe -Url https://root.fhnb.ru/DownloadsOSX/Downloads.exe -Out update.json -Notes "What changed"

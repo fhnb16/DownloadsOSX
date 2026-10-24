@@ -1,11 +1,11 @@
 name: Build
 
 # Builds Downloads.exe on every branch push and pull request and uploads it as a workflow artifact
-# (Actions → run → Artifacts). Tags are handled by release.yml, which also publishes the release.
+# (Actions → run → Artifacts). master and tags are built by release.yml, which also publishes releases.
 
 on:
   push:
-    branches: ['**']
+    branches-ignore: [master]
     paths-ignore: ['**.md', 'legacy/**', '.gitignore']
   pull_request:
     paths-ignore: ['**.md', 'legacy/**', '.gitignore']

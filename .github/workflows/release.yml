@@ -1,12 +1,17 @@
 name: Release
 
-# Push a tag like v1.2.0 to build Downloads.exe, generate update.json and publish a GitHub release.
+# Builds Downloads.exe, generates update.json and publishes a GitHub release when:
+#  - master is pushed with a new <Version> in DownloadsOSX.csproj (the tag v<Version> is created by the release), or
+#  - a tag like v1.2.0 is pushed by hand.
 # Installed apps pick it up through https://github.com/<owner>/<repo>/releases/latest/download/update.json.
-# Tags with a suffix (v1.2.0-rc1) become pre-releases, which "latest" ignores — handy for testing.
+# Versions with a suffix (1.2.0-rc1) become pre-releases, which "latest" ignores — handy for testing.
+# Pushes to master that keep an already released version only build and upload an artifact.
 
 on:
   push:
+    branches: [master]
     tags: ['v*']
+    paths-ignore: ['**.md', 'legacy/**', '.gitignore']
   workflow_dispatch:
     inputs:
       version:
@@ -15,6 +20,11 @@ on:
 
 permissions:
   contents: write
+
+# Run releases one at a time so a commit and its tag pushed together can't both create the release.
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -28,8 +38,20 @@ jobs:
         id: v
         shell: pwsh
         run: |
-          $v = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.TrimStart('v') } else { '${{ inputs.version }}' }
+          if ($env:GITHUB_REF_TYPE -eq 'tag') {
+            $v = $env:GITHUB_REF_NAME.TrimStart('v')
+          } elseif ($env:GITHUB_EVENT_NAME -eq 'push') {
+            $v = (Select-Xml -Path src/DownloadsOSX/DownloadsOSX.csproj -XPath '//Version').Node.InnerText
+            # Each version is released once: an existing tag means this push didn't bump it (or the tag run releases it).
+            if (git tag -l "v$v") {
+              "::notice::v$v already exists, building without publishing. Bump <Version> to release."
+              "skip=true" >> $env:GITHUB_OUTPUT
+            }
+          } else {
+            $v = '${{ inputs.version }}'
+          }
           "version=$v" >> $env:GITHUB_OUTPUT
+          "tag=v$v" >> $env:GITHUB_OUTPUT
           "prerelease=$($v.Contains('-').ToString().ToLower())" >> $env:GITHUB_OUTPUT
 
       - uses: microsoft/setup-msbuild@v2
@@ -49,7 +71,7 @@ jobs:
           if (-not "$notes".Trim()) { $notes = git log -1 --format=%B }
           Set-Content dist/notes.md $notes
 
-          $url = "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/Downloads.exe"
+          $url = "https://github.com/${{ github.repository }}/releases/download/${{ steps.v.outputs.tag }}/Downloads.exe"
           ./tools/make-manifest.ps1 -Exe dist/Downloads.exe -Version '${{ steps.v.outputs.version }}' -Url $url -NotesFile dist/notes.md -Out dist/update.json
 
       - uses: actions/upload-artifact@v4
@@ -58,11 +80,13 @@ jobs:
           path: dist/
 
       - name: Publish release
-        if: github.ref_type == 'tag'
+        if: github.event_name == 'push' && steps.v.outputs.skip != 'true'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $ghArgs = @($env:GITHUB_REF_NAME, 'dist/Downloads.exe', 'dist/update.json', '--title', "Downloads $env:GITHUB_REF_NAME", '--notes-file', 'dist/notes.md')
+          $tag = '${{ steps.v.outputs.tag }}'
+          # --target creates the tag on this commit when it doesn't exist yet (master pushes).
+          $ghArgs = @($tag, 'dist/Downloads.exe', 'dist/update.json', '--title', "Downloads $tag", '--notes-file', 'dist/notes.md', '--target', $env:GITHUB_SHA)
           if ('${{ steps.v.outputs.prerelease }}' -eq 'true') { $ghArgs += '--prerelease' }
           gh release create @ghArgs
