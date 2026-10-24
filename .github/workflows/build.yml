@@ -1,0 +1,46 @@
+name: Build
+
+# Builds Downloads.exe on every branch push and pull request and uploads it as a workflow artifact
+# (Actions → run → Artifacts). Tags are handled by release.yml, which also publishes the release.
+
+on:
+  push:
+    branches: ['**']
+    paths-ignore: ['**.md', 'legacy/**', '.gitignore']
+  pull_request:
+    paths-ignore: ['**.md', 'legacy/**', '.gitignore']
+  workflow_dispatch:
+
+# A newer push to the same branch cancels the build still running for the previous one.
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: v
+        shell: pwsh
+        run: |
+          $v = (Select-Xml -Path src/DownloadsOSX/DownloadsOSX.csproj -XPath '//Version').Node.InnerText
+          "version=$v" >> $env:GITHUB_OUTPUT
+          "sha=$($env:GITHUB_SHA.Substring(0, 7))" >> $env:GITHUB_OUTPUT
+
+      - uses: microsoft/setup-msbuild@v2
+
+      - name: Build
+        run: msbuild src/DownloadsOSX/DownloadsOSX.csproj -restore -p:Configuration=Release -p:ContinuousIntegrationBuild=true -v:m
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Downloads-${{ steps.v.outputs.version }}-${{ steps.v.outputs.sha }}
+          path: src/DownloadsOSX/bin/Release/net48/Downloads.exe
+          if-no-files-found: error
+          retention-days: 30

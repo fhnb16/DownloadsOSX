@@ -122,6 +122,8 @@ msbuild src/DownloadsOSX/DownloadsOSX.csproj -restore -p:Configuration=Release
 
 The output is a single `src/DownloadsOSX/bin/Release/net48/Downloads.exe`. The .NET 4.8 targeting pack is not required (the `Microsoft.NETFramework.ReferenceAssemblies` build package supplies it). If you switch between `dotnet build` and Visual Studio's MSBuild and see `*.g.cs not found` errors, delete `src/DownloadsOSX/obj`.
 
+Every push and pull request is built by the [Build workflow](.github/workflows/build.yml); the resulting `Downloads.exe` is attached to the run as an artifact (kept 30 days).
+
 To test backdrop fallbacks on a newer Windows, set `DOWNLOADSOSX_OS_BUILD` (e.g. `19045` for Windows 10, `7601` for Windows 7) before launching.
 
 ## Releasing
