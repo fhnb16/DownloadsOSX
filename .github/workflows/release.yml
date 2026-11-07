@@ -1,7 +1,7 @@
 name: Release
 
 # Builds Downloads.exe and DownloadsOSX-Setup.exe (Authenticode-signed when the SIGN_PFX_BASE64 secret is set),
-# generates update.json and publishes a GitHub release when:
+# packs the exe into Downloads.zip / Downloads.rar, generates update.json and publishes a GitHub release when:
 #  - master is pushed with a new <Version> in DownloadsOSX.csproj (the tag v<Version> is created by the release), or
 #  - a tag like v1.2.0 is pushed by hand.
 # Installed apps pick it up through https://github.com/<owner>/<repo>/releases/latest/download/update.json.
@@ -60,9 +60,11 @@ jobs:
       - name: Build
         run: msbuild src/DownloadsOSX/DownloadsOSX.csproj -restore -p:Configuration=Release -p:Version=${{ steps.v.outputs.version }} -p:ContinuousIntegrationBuild=true -v:m
 
-      - name: Install Inno Setup
+      - name: Install Inno Setup and WinRAR
         shell: pwsh
-        run: if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
+          if (-not (Test-Path "$env:ProgramFiles\WinRAR\Rar.exe")) { choco install winrar -y --no-progress }
 
       # Signs only when the SIGN_PFX_BASE64 secret is set (see tools/sign.ps1); otherwise warns and continues unsigned.
       - name: Sign and build installer
@@ -77,10 +79,15 @@ jobs:
           ./tools/sign.ps1 dist/Downloads.exe
           ./tools/build-installer.ps1 -Exe dist/Downloads.exe -Version '${{ steps.v.outputs.version }}' -OutDir dist
 
-      # After signing: update.json carries the SHA-256 of the signed exe.
+      # After signing: update.json and the archives carry the signed exe.
       - name: Package
         shell: pwsh
         run: |
+          # The same exe in archives, for those who'd rather not download a bare .exe.
+          Compress-Archive -Path dist/Downloads.exe -DestinationPath dist/Downloads.zip -CompressionLevel Optimal -Force
+          & "$env:ProgramFiles\WinRAR\Rar.exe" a -ep1 -m5 -idq dist/Downloads.rar dist/Downloads.exe
+          if ($LASTEXITCODE -ne 0) { throw "rar failed with exit code $LASTEXITCODE" }
+
           # Release notes: the annotated tag message, else the last commit message.
           git fetch --tags --force | Out-Null
           $notes = if ($env:GITHUB_REF_TYPE -eq 'tag') { git tag -l --format='%(contents:body)' $env:GITHUB_REF_NAME } else { $null }
@@ -103,6 +110,6 @@ jobs:
         run: |
           $tag = '${{ steps.v.outputs.tag }}'
           # --target creates the tag on this commit when it doesn't exist yet (master pushes).
-          $ghArgs = @($tag, 'dist/Downloads.exe', 'dist/DownloadsOSX-Setup.exe', 'dist/update.json', '--title', "Downloads $tag", '--notes-file', 'dist/notes.md', '--target', $env:GITHUB_SHA)
+          $ghArgs = @($tag, 'dist/Downloads.exe', 'dist/DownloadsOSX-Setup.exe', 'dist/Downloads.zip', 'dist/Downloads.rar', 'dist/update.json', '--title', "Downloads $tag", '--notes-file', 'dist/notes.md', '--target', $env:GITHUB_SHA)
           if ('${{ steps.v.outputs.prerelease }}' -eq 'true') { $ghArgs += '--prerelease' }
           gh release create @ghArgs

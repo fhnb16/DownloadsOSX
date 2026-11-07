@@ -54,7 +54,7 @@ Runs on **Windows 7 SP1 through Windows 11** (.NET Framework 4.8), as a single p
 **Setup:** run `DownloadsOSX-Setup.exe` from the [latest release](../../releases/latest). It installs for the current user into `%LocalAppData%\Programs\DownloadsOSX` (no admin rights), adds a Start menu shortcut and optionally starts with Windows; uninstall from *Settings → Apps*. Your settings are kept on uninstall.
 
 **Portable:**
-1. Download `Downloads.exe` from the [latest release](../../releases/latest) and put it anywhere you like (for example `%AppData%\fhnb16\DownloadsOSX`).
+1. Download `Downloads.exe` (or the same exe in `Downloads.zip` / `Downloads.rar`) from the [latest release](../../releases/latest) and put it anywhere you like (for example `%AppData%\fhnb16\DownloadsOSX`).
 2. Run it, then right-click its taskbar button → **Pin to taskbar**.
 3. Optional: *Settings → Behavior → Start with Windows*.
 
@@ -145,7 +145,7 @@ To test backdrop fallbacks on a newer Windows, set `DOWNLOADSOSX_OS_BUILD` (e.g.
    git tag -a v1.2.0 -m "What changed"
    git push origin v1.2.0
    ```
-2. The [Release workflow](.github/workflows/release.yml) builds with that version, signs the exe, builds and signs the setup (see [Code signing](#code-signing)), generates `update.json` (version, download URL, SHA-256 of the signed exe, notes) and publishes a GitHub release `v<version>` with `Downloads.exe`, `DownloadsOSX-Setup.exe` and `update.json`. A `master` push whose version already has a tag only builds an artifact, without publishing.
+2. The [Release workflow](.github/workflows/release.yml) builds with that version, signs the exe, builds and signs the setup (see [Code signing](#code-signing)), generates `update.json` (version, download URL, SHA-256 of the signed exe, notes) and publishes a GitHub release `v<version>` with `Downloads.exe`, `DownloadsOSX-Setup.exe`, the same exe in `Downloads.zip` / `Downloads.rar`, and `update.json`. A `master` push whose version already has a tag only builds an artifact, without publishing.
    Versions with a suffix (`1.2.0-rc1`) become pre-releases, which installed apps ignore.
 3. **Own server mirror (fallback source):** upload the same `Downloads.exe` and a manifest pointing at it:
    ```powershell
