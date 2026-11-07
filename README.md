@@ -40,7 +40,7 @@ Runs on **Windows 7 SP1 through Windows 11** (.NET Framework 4.8), as a single p
 - English, Русский, Українська
 
 **Updates**
-- Checks GitHub Releases, then the project server as a fallback; SHA-256-verified, swaps itself in place and restarts — no installer
+- Checks GitHub Releases, then the project server as a fallback; SHA-256 and Authenticode verified, swaps itself in place and restarts
 
 ## Requirements
 
@@ -51,9 +51,14 @@ Runs on **Windows 7 SP1 through Windows 11** (.NET Framework 4.8), as a single p
 
 ## Install
 
+**Setup:** run `DownloadsOSX-Setup.exe` from the [latest release](../../releases/latest). It installs for the current user into `%LocalAppData%\Programs\DownloadsOSX` (no admin rights), adds a Start menu shortcut and optionally starts with Windows; uninstall from *Settings → Apps*. Your settings are kept on uninstall.
+
+**Portable:**
 1. Download `Downloads.exe` from the [latest release](../../releases/latest) and put it anywhere you like (for example `%AppData%\fhnb16\DownloadsOSX`).
 2. Run it, then right-click its taskbar button → **Pin to taskbar**.
 3. Optional: *Settings → Behavior → Start with Windows*.
+
+Both update themselves the same way.
 
 Clicking the pinned icon now opens the stack right above it; clicking anywhere else hides it.
 
@@ -122,7 +127,13 @@ msbuild src/DownloadsOSX/DownloadsOSX.csproj -restore -p:Configuration=Release
 
 The output is a single `src/DownloadsOSX/bin/Release/net48/Downloads.exe`. The .NET 4.8 targeting pack is not required (the `Microsoft.NETFramework.ReferenceAssemblies` build package supplies it). If you switch between `dotnet build` and Visual Studio's MSBuild and see `*.g.cs not found` errors, delete `src/DownloadsOSX/obj`.
 
-Pushes to other branches and pull requests are built by the [Build workflow](.github/workflows/build.yml); the resulting `Downloads.exe` is attached to the run as an artifact (kept 30 days). `master` is built by the Release workflow (see below).
+The setup is built with [Inno Setup 6](https://jrsoftware.org/isinfo.php) (`winget install JRSoftware.InnoSetup`) from [installer/DownloadsOSX.iss](installer/DownloadsOSX.iss):
+
+```powershell
+./tools/build-installer.ps1            # → dist/DownloadsOSX-Setup.exe
+```
+
+Pushes to other branches and pull requests are built by the [Build workflow](.github/workflows/build.yml); `Downloads.exe` and `DownloadsOSX-Setup.exe` are attached to the run as an artifact (kept 30 days). `master` is built by the Release workflow (see below).
 
 To test backdrop fallbacks on a newer Windows, set `DOWNLOADSOSX_OS_BUILD` (e.g. `19045` for Windows 10, `7601` for Windows 7) before launching.
 
@@ -134,7 +145,7 @@ To test backdrop fallbacks on a newer Windows, set `DOWNLOADSOSX_OS_BUILD` (e.g.
    git tag -a v1.2.0 -m "What changed"
    git push origin v1.2.0
    ```
-2. The [Release workflow](.github/workflows/release.yml) builds with that version, generates `update.json` (version, download URL, SHA-256, notes) and publishes a GitHub release `v<version>` with `Downloads.exe` + `update.json`. A `master` push whose version already has a tag only builds an artifact, without publishing.
+2. The [Release workflow](.github/workflows/release.yml) builds with that version, signs the exe, builds and signs the setup (see [Code signing](#code-signing)), generates `update.json` (version, download URL, SHA-256 of the signed exe, notes) and publishes a GitHub release `v<version>` with `Downloads.exe`, `DownloadsOSX-Setup.exe` and `update.json`. A `master` push whose version already has a tag only builds an artifact, without publishing.
    Versions with a suffix (`1.2.0-rc1`) become pre-releases, which installed apps ignore.
 3. **Own server mirror (fallback source):** upload the same `Downloads.exe` and a manifest pointing at it:
    ```powershell
@@ -146,16 +157,49 @@ To test backdrop fallbacks on a newer Windows, set `DOWNLOADSOSX_OS_BUILD` (e.g.
 
 - Sources, in order: `https://github.com/<owner>/<repo>/releases/latest/download/update.json` (a redirect — no API call, no rate limit), then `https://root.fhnb.ru/DownloadsOSX/update.json`. The repository is the `GitHubRepo` constant in [`UpdateService.cs`](src/DownloadsOSX/Services/UpdateService.cs).
 - Checked 30 s after start and then at most once a day (or on demand). HTTPS only, TLS 1.2 forced (Windows 7 needs it).
-- The new exe is downloaded next to the current one, **SHA-256 verified**, the running exe is renamed to `.old` (Windows allows this), the new one takes its place and is started with `--updated`; leftovers are cleaned on the next start.
+- The new exe is downloaded next to the current one, **SHA-256 verified** and its **Authenticode signature checked** (see below), the running exe is renamed to `.old` (Windows allows this), the new one takes its place and is started with `--updated`; leftovers are cleaned on the next start.
 - If the folder isn't writable (e.g. Program Files), the downloaded exe installs itself with a single UAC prompt and relaunches the app un-elevated.
 - *Install automatically* mode downloads in the background and swaps only while the stack is hidden and idle.
 - **Testing:** add `"UpdateManifestUrls": ["http://localhost:8765/update.json"]` to `settings.json` (plain HTTP is accepted for localhost only) and serve a manifest + exe from a local folder.
 
-### Code signing and Smart App Control
+- **Signature check** (only when the running exe is itself signed; unsigned builds skip it):
+  | New exe | Result |
+  |---|---|
+  | Signature Windows trusts — any certificate, so renewals and a new provider are fine | installed |
+  | Signed with the same certificate as the running exe (e.g. self-signed) | installed |
+  | Unsigned, or signed with an unknown certificate Windows doesn't trust | the update dialog asks for consent; *Install automatically* never installs it silently |
+  | Signature broken (file changed after signing) | rejected |
 
-Windows 11 **Smart App Control** (and SmartScreen) can block unsigned executables with no reputation — including freshly built or freshly downloaded versions of `Downloads.exe`. Signing releases with a code-signing certificate avoids this. The updater is defensive about it: if the new version is blocked from starting, the previous exe is restored and the error is shown in the update dialog, so the app is never left broken.
+  So if the certificate is ever lost, unsigned releases still reach users — with a confirmation prompt.
 
-### Migrating users of the legacy version
+## Code signing
+
+Windows 11 **Smart App Control** (and SmartScreen) can block unsigned executables with no reputation — including freshly built or freshly downloaded versions of `Downloads.exe`. Signing releases with a code-signing certificate from a trusted CA avoids this. The updater is defensive about it: if the new version is blocked from starting, the previous exe is restored and the error is shown in the update dialog, so the app is never left broken.
+
+CI signs `Downloads.exe`, `DownloadsOSX-Setup.exe` and the setup's uninstaller with [tools/sign.ps1](tools/sign.ps1) (signtool, SHA-256, RFC 3161 timestamp) **if a certificate is configured**; otherwise the build succeeds unsigned with a warning. The script doesn't depend on the certificate provider:
+
+| Certificate | How to configure |
+|---|---|
+| `.pfx` file (CI) | Repository secrets `SIGN_PFX_BASE64` (the .pfx as base64) and `SIGN_PFX_PASSWORD` |
+| `.pfx` file (local) | `$env:SIGN_PFX_PATH` + `$env:SIGN_PFX_PASSWORD` |
+| Certificate store — USB token, Certum SimplySign, any CSP/KSP (local) | `$env:SIGN_CERT_THUMBPRINT` or `-Thumbprint` |
+| Timestamp server (optional) | Repository variable / `$env:SIGN_TIMESTAMP_URL`; falls back to DigiCert, Sectigo, Certum |
+
+Since June 2023 publicly trusted code-signing certificates come with the key on a token or in a cloud HSM and can't be exported to a .pfx; sign those releases locally via the certificate store, or with the provider's own CI integration (SignPath, Azure Trusted Signing). A self-signed .pfx works in CI but isn't trusted by SmartScreen / Smart App Control.
+
+```powershell
+# Put a .pfx into the repository secrets (GitHub CLI):
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("codesign.pfx")) | gh secret set SIGN_PFX_BASE64
+gh secret set SIGN_PFX_PASSWORD
+
+# Sign locally, then build the signed setup:
+./tools/sign.ps1 dist/Downloads.exe -Thumbprint <thumbprint>
+$env:SIGN_CERT_THUMBPRINT = "<thumbprint>"; ./tools/build-installer.ps1 -Exe dist/Downloads.exe
+```
+
+Run `make-manifest.ps1` after signing: signing changes the file, and `update.json` must carry the hash of the signed exe.
+
+## Migrating users of the legacy version
 
 Old builds (0.x) check `root.fhnb.ru/DownloadsOSX/config.json` → `LatestVersion` and update through the Omicron installer (app ID `0002`). Point that installer at the new `Downloads.exe` once; from then on the built-in updater takes over. The autostart entry keeps its legacy name (`DownloaderOSX`), so enabling autostart in the new version replaces the old entry instead of starting both.
 
@@ -166,12 +210,15 @@ DownloadsOSX.sln
 src/DownloadsOSX/
   App.xaml(.cs)          startup, single instance, command line, language
   Interop/               Win32/COM: shell context menu, thumbnails, preview handlers, known folders, folder picker
-  Services/              backdrop/theme, downloads watcher, updater, jump list, hotkey, tray, settings, autostart
+  Services/              backdrop/theme, downloads watcher, updater + signature check, jump list, hotkey, tray, settings, autostart
   Models/                settings and file entries
   Views/                 stack, preview (+ Preview/ views), settings, update dialog
   Resources/             strings (en/ru/uk), light/dark theme, vector icons, control styles
   Assets/                icon, images, Ubuntu font
+installer/DownloadsOSX.iss  Inno Setup script (per-user setup)
 tools/make-manifest.ps1  update.json generator
+tools/sign.ps1           Authenticode signing (pfx / base64 pfx / certificate store)
+tools/build-installer.ps1  builds (and signs) the setup
 legacy/                  the original 0.x project, kept for reference
 ```
 

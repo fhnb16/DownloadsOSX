@@ -20,7 +20,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
 
     <!-- CI passes -p:Version=x.y.z from the git tag. -->
-    <Version>1.0.1</Version>
+    <Version>1.1.0</Version>
     <Product>DownloadsOSX</Product>
     <Company>fhnb</Company>
     <Copyright>© fhnb</Copyright>

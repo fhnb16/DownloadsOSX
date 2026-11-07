@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 using System.Windows.Threading;
 using DownloadsOSX.Interop;
 using DownloadsOSX.Models;
+using Microsoft.Win32;
 
 namespace DownloadsOSX.Services
 {
@@ -43,9 +44,16 @@ namespace DownloadsOSX.Services
         public string Error;
     }
 
+    public sealed class DownloadedUpdate
+    {
+        public string Path;
+        /// <summary>Unsigned, or signed by an unknown certificate Windows doesn't trust: ask before installing.</summary>
+        public bool NeedsConsent;
+    }
+
     /// <summary>
     /// Self-updater. Checks a list of manifest URLs in order (GitHub Releases first, own server as fallback),
-    /// downloads the new exe, verifies SHA-256 and swaps it in place (renaming a running exe is allowed).
+    /// downloads the new exe, verifies SHA-256 and the Authenticode signer and swaps it in place (renaming a running exe is allowed).
     /// If the exe folder isn't writable, an elevated copy of the new exe installs itself.
     /// </summary>
     internal sealed class UpdateService : INotifyPropertyChanged
@@ -115,7 +123,12 @@ namespace DownloadsOSX.Services
             var result = await CheckAsync(false);
             if (result.Status == UpdateStatus.Available && _settings.UpdateMode == UpdateMode.Auto && CanInstallInPlace)
             {
-                try { PendingPath = await DownloadAsync(result.Manifest, null, CancellationToken.None); }
+                try
+                {
+                    var update = await DownloadAsync(result.Manifest, null, CancellationToken.None);
+                    // Never installed silently without a valid signature; the update dialog asks instead.
+                    if (!update.NeedsConsent) PendingPath = update.Path;
+                }
                 catch (Exception ex) { Log.Warn("Background update download failed", ex); }
             }
         }
@@ -197,22 +210,23 @@ namespace DownloadsOSX.Services
 
         private static string TempDir => Path.Combine(Path.GetTempPath(), "DownloadsOSX-update");
 
-        /// <summary>Downloads and verifies the update. Returns the path of the verified exe.</summary>
-        public async Task<string> DownloadAsync(UpdateManifest m, IProgress<double> progress, CancellationToken ct)
+        /// <summary>Downloads and verifies the update (SHA-256 and signature).</summary>
+        public async Task<DownloadedUpdate> DownloadAsync(UpdateManifest m, IProgress<double> progress, CancellationToken ct)
         {
             IsBusy = true;
             try
             {
                 string target = CanInstallInPlace ? ExePath + ".new" : Path.Combine(TempDir, "Downloads.exe");
                 Directory.CreateDirectory(Path.GetDirectoryName(target));
-                await Task.Run(() => Download(m, target, progress, ct), ct);
+                bool needsConsent = await Task.Run(() => Download(m, target, progress, ct), ct);
                 Log.Info($"Update {m.Version} downloaded and verified: {target}");
-                return target;
+                return new DownloadedUpdate { Path = target, NeedsConsent = needsConsent };
             }
             finally { IsBusy = false; }
         }
 
-        private static void Download(UpdateManifest m, string target, IProgress<double> progress, CancellationToken ct)
+        /// <summary>Returns true if the download has no valid signature and the user has to confirm it.</summary>
+        private static bool Download(UpdateManifest m, string target, IProgress<double> progress, CancellationToken ct)
         {
             using (var sha = SHA256.Create())
             {
@@ -240,6 +254,8 @@ namespace DownloadsOSX.Services
                     string actual = BitConverter.ToString(sha.Hash).Replace("-", "");
                     if (!string.Equals(actual, m.Sha256.Trim(), StringComparison.OrdinalIgnoreCase))
                         throw new InvalidDataException(App.Str("UpdateHashMismatch"));
+                    // The hash only proves the file matches the manifest; the signature proves who built it.
+                    return Authenticode.UpdateNeedsConsent(ExePath, target);
                 }
                 catch
                 {
@@ -321,6 +337,24 @@ namespace DownloadsOSX.Services
                 System.Windows.MessageBox.Show("Update failed: " + ex.Message, "Downloads", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             }
             return true;
+        }
+
+        /// <summary>Uninstall entry written by the setup (installer/DownloadsOSX.iss, AppId + "_is1").</summary>
+        private const string UninstallKey = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\{B7E3A1C4-5D2F-4E8A-9C6B-1F0D2A3E4B5C}_is1";
+
+        /// <summary>Keeps the version shown in "Installed apps" in step with self-updates when installed by the setup.</summary>
+        public static void SyncInstalledVersion()
+        {
+            try
+            {
+                using (var key = Registry.CurrentUser.OpenSubKey(UninstallKey, true))
+                {
+                    if (!(key?.GetValue("InstallLocation") is string location) || string.IsNullOrEmpty(location)) return;
+                    if (!string.Equals(Path.GetFullPath(location).TrimEnd('\\'), Path.GetDirectoryName(ExePath), StringComparison.OrdinalIgnoreCase)) return;
+                    if (key.GetValue("DisplayVersion") as string != CurrentVersionText) key.SetValue("DisplayVersion", CurrentVersionText);
+                }
+            }
+            catch (Exception ex) { Log.Warn("Could not update the installed version", ex); }
         }
 
         /// <summary>Removes leftovers of a previous update.</summary>

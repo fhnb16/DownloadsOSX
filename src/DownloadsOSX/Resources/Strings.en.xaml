@@ -104,6 +104,9 @@
     <s:String x:Key="UpdateFailed">Update failed:</s:String>
     <s:String x:Key="UpdateCancelledUac">Installation was cancelled.</s:String>
     <s:String x:Key="UpdateHashMismatch">The downloaded file is damaged (checksum mismatch). Please try again later.</s:String>
+    <s:String x:Key="UpdateSignatureInvalid">The digital signature of the downloaded file is invalid (it was changed after signing), so it was not installed.</s:String>
+    <s:String x:Key="UpdateUnsignedConfirm">This update has no valid digital signature: it is unsigned or signed with an unknown certificate.&#x0a;&#x0a;Install it only if you trust the source. Install anyway?</s:String>
+    <s:String x:Key="UpdateCancelledUnsigned">Unsigned update was not installed.</s:String>
     <s:String x:Key="UpdatedTo">Updated to {0}.</s:String>
     <s:String x:Key="CheckingUpdates">Checking for updates…</s:String>
     <s:String x:Key="UpToDate">You're up to date ({0}).</s:String>

@@ -1,6 +1,6 @@
 name: Build
 
-# Builds Downloads.exe on every branch push and pull request and uploads it as a workflow artifact
+# Builds Downloads.exe and the setup on every branch push and pull request and uploads them as a workflow artifact
 # (Actions → run → Artifacts). master and tags are built by release.yml, which also publishes releases.
 
 on:
@@ -38,9 +38,26 @@ jobs:
       - name: Build
         run: msbuild src/DownloadsOSX/DownloadsOSX.csproj -restore -p:Configuration=Release -p:ContinuousIntegrationBuild=true -v:m
 
+      - name: Install Inno Setup
+        shell: pwsh
+        run: if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
+
+      # Signs only when the SIGN_PFX_BASE64 secret is set (not for pull requests from forks); otherwise warns.
+      - name: Sign and build installer
+        shell: pwsh
+        env:
+          SIGN_PFX_BASE64: ${{ secrets.SIGN_PFX_BASE64 }}
+          SIGN_PFX_PASSWORD: ${{ secrets.SIGN_PFX_PASSWORD }}
+          SIGN_TIMESTAMP_URL: ${{ vars.SIGN_TIMESTAMP_URL }}
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Copy-Item src/DownloadsOSX/bin/Release/net48/Downloads.exe dist/
+          ./tools/sign.ps1 dist/Downloads.exe
+          ./tools/build-installer.ps1 -Exe dist/Downloads.exe -OutDir dist
+
       - uses: actions/upload-artifact@v4
         with:
           name: Downloads-${{ steps.v.outputs.version }}-${{ steps.v.outputs.sha }}
-          path: src/DownloadsOSX/bin/Release/net48/Downloads.exe
+          path: dist/
           if-no-files-found: error
           retention-days: 30

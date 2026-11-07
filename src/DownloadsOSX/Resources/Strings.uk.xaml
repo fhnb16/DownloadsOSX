@@ -104,6 +104,9 @@
     <s:String x:Key="UpdateFailed">Не вдалося оновити:</s:String>
     <s:String x:Key="UpdateCancelledUac">Встановлення скасовано.</s:String>
     <s:String x:Key="UpdateHashMismatch">Завантажений файл пошкоджено (контрольна сума не збігається). Спробуйте пізніше.</s:String>
+    <s:String x:Key="UpdateSignatureInvalid">Цифровий підпис завантаженого файлу недійсний (файл змінено після підписання), тому його не встановлено.</s:String>
+    <s:String x:Key="UpdateUnsignedConfirm">Це оновлення не має дійсного цифрового підпису: воно не підписане або підписане невідомим сертифікатом.&#x0a;&#x0a;Встановлюйте його, лише якщо довіряєте джерелу. Усе одно встановити?</s:String>
+    <s:String x:Key="UpdateCancelledUnsigned">Непідписане оновлення не встановлено.</s:String>
     <s:String x:Key="UpdatedTo">Оновлено до версії {0}.</s:String>
     <s:String x:Key="CheckingUpdates">Перевірка оновлень…</s:String>
     <s:String x:Key="UpToDate">Встановлено останню версію ({0}).</s:String>

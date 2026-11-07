@@ -82,6 +82,7 @@ namespace DownloadsOSX
 
             ThemeService.Init();
             UpdateService.Cleanup();
+            UpdateService.SyncInstalledVersion();
             Autostart.Refresh(Settings.StartMinimized);
 
             Sta = new StaWorker("Shell worker");

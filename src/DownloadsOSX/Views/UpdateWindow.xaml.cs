@@ -52,7 +52,21 @@ namespace DownloadsOSX.Views
 
             try
             {
-                string path = App.Updater.PendingPath ?? await App.Updater.DownloadAsync(_manifest, progress, _cts.Token);
+                string path = App.Updater.PendingPath;
+                if (path == null)
+                {
+                    var update = await App.Updater.DownloadAsync(_manifest, progress, _cts.Token);
+                    if (update.NeedsConsent && MessageBox.Show(this, App.Str("UpdateUnsignedConfirm"), App.Str("AppTitle"),
+                            MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
+                    {
+                        Log.Info("Unsigned update declined by the user");
+                        ProgressText.Text = App.Str("UpdateCancelledUnsigned");
+                        InstallButton.IsEnabled = true;
+                        SkipButton.IsEnabled = true;
+                        return;
+                    }
+                    path = update.Path;
+                }
                 Progress.Value = 1;
                 ProgressText.Text = App.Str("Installing");
                 UpdateService.ApplyAndRestart(path, startMinimized: false);

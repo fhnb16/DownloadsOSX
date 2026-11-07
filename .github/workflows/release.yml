@@ -1,6 +1,7 @@
 name: Release
 
-# Builds Downloads.exe, generates update.json and publishes a GitHub release when:
+# Builds Downloads.exe and DownloadsOSX-Setup.exe (Authenticode-signed when the SIGN_PFX_BASE64 secret is set),
+# generates update.json and publishes a GitHub release when:
 #  - master is pushed with a new <Version> in DownloadsOSX.csproj (the tag v<Version> is created by the release), or
 #  - a tag like v1.2.0 is pushed by hand.
 # Installed apps pick it up through https://github.com/<owner>/<repo>/releases/latest/download/update.json.
@@ -59,12 +60,27 @@ jobs:
       - name: Build
         run: msbuild src/DownloadsOSX/DownloadsOSX.csproj -restore -p:Configuration=Release -p:Version=${{ steps.v.outputs.version }} -p:ContinuousIntegrationBuild=true -v:m
 
-      - name: Package
+      - name: Install Inno Setup
         shell: pwsh
+        run: if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
+
+      # Signs only when the SIGN_PFX_BASE64 secret is set (see tools/sign.ps1); otherwise warns and continues unsigned.
+      - name: Sign and build installer
+        shell: pwsh
+        env:
+          SIGN_PFX_BASE64: ${{ secrets.SIGN_PFX_BASE64 }}
+          SIGN_PFX_PASSWORD: ${{ secrets.SIGN_PFX_PASSWORD }}
+          SIGN_TIMESTAMP_URL: ${{ vars.SIGN_TIMESTAMP_URL }}
         run: |
           New-Item -ItemType Directory -Force dist | Out-Null
           Copy-Item src/DownloadsOSX/bin/Release/net48/Downloads.exe dist/
+          ./tools/sign.ps1 dist/Downloads.exe
+          ./tools/build-installer.ps1 -Exe dist/Downloads.exe -Version '${{ steps.v.outputs.version }}' -OutDir dist
 
+      # After signing: update.json carries the SHA-256 of the signed exe.
+      - name: Package
+        shell: pwsh
+        run: |
           # Release notes: the annotated tag message, else the last commit message.
           git fetch --tags --force | Out-Null
           $notes = if ($env:GITHUB_REF_TYPE -eq 'tag') { git tag -l --format='%(contents:body)' $env:GITHUB_REF_NAME } else { $null }
@@ -87,6 +103,6 @@ jobs:
         run: |
           $tag = '${{ steps.v.outputs.tag }}'
           # --target creates the tag on this commit when it doesn't exist yet (master pushes).
-          $ghArgs = @($tag, 'dist/Downloads.exe', 'dist/update.json', '--title', "Downloads $tag", '--notes-file', 'dist/notes.md', '--target', $env:GITHUB_SHA)
+          $ghArgs = @($tag, 'dist/Downloads.exe', 'dist/DownloadsOSX-Setup.exe', 'dist/update.json', '--title', "Downloads $tag", '--notes-file', 'dist/notes.md', '--target', $env:GITHUB_SHA)
           if ('${{ steps.v.outputs.prerelease }}' -eq 'true') { $ghArgs += '--prerelease' }
           gh release create @ghArgs

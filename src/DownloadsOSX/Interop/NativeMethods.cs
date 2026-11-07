@@ -308,6 +308,19 @@ namespace DownloadsOSX.Interop
 
         #endregion
 
+        #region wintrust
+
+        [DllImport("wintrust.dll", ExactSpelling = true, CharSet = CharSet.Unicode)]
+        public static extern int WinVerifyTrust(IntPtr hwnd, [MarshalAs(UnmanagedType.LPStruct)] Guid pgActionID, ref WINTRUST_DATA pWVTData);
+        public static readonly Guid WINTRUST_ACTION_GENERIC_VERIFY_V2 = new Guid("00AAC56B-CD44-11d0-8CC2-00C04FC295EE");
+        public const uint WTD_UI_NONE = 2, WTD_REVOKE_NONE = 0, WTD_CHOICE_FILE = 1, WTD_STATEACTION_IGNORE = 0;
+        public const int TRUST_E_NOSIGNATURE = unchecked((int)0x800B0100);
+        public const int CERT_E_EXPIRED = unchecked((int)0x800B0101);
+        public const int CERT_E_UNTRUSTEDROOT = unchecked((int)0x800B0109);
+        public const int CERT_E_CHAINING = unchecked((int)0x800B010A);
+
+        #endregion
+
         #region Structs
 
         [StructLayout(LayoutKind.Sequential)]
@@ -444,6 +457,32 @@ namespace DownloadsOSX.Interop
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)] public string szCSDVersion;
             public ushort wServicePackMajor, wServicePackMinor, wSuiteMask;
             public byte wProductType, wReserved;
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        public struct WINTRUST_FILE_INFO
+        {
+            public int cbStruct;
+            [MarshalAs(UnmanagedType.LPWStr)] public string pcwszFilePath;
+            public IntPtr hFile;
+            public IntPtr pgKnownSubject;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct WINTRUST_DATA
+        {
+            public int cbStruct;
+            public IntPtr pPolicyCallbackData;
+            public IntPtr pSIPClientData;
+            public uint dwUIChoice;
+            public uint fdwRevocationChecks;
+            public uint dwUnionChoice;
+            public IntPtr pFile;
+            public uint dwStateAction;
+            public IntPtr hWVTStateData;
+            public IntPtr pwszURLReference;
+            public uint dwProvFlags;
+            public uint dwUIContext;
         }
 
         #endregion
